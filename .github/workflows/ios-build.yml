@@ -28,7 +28,27 @@ jobs:
           cd ios
           pod install
 
-      - name: Build iOS App
+      - name: Build iOS App (Unsigned)
         run: |
           cd ios
-          xcodebuild -workspace test.xcworkspace -scheme test -sdk iphonesimulator -configuration Debug clean build CODE_SIGNING_ALLOWED=NO
+          xcodebuild -workspace test.xcworkspace \
+            -scheme test \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath $PWD/build/test.xcarchive \
+            clean archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Create Unsigned IPA
+        run: |
+          cd ios
+          mkdir -p Payload
+          mv build/test.xcarchive/Products/Applications/test.app Payload/
+          zip -r test-unsigned.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-unsigned
+          path: ios/test-unsigned.ipa
