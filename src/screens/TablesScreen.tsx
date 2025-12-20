@@ -10,23 +10,25 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { usePOSStore } from '../store/posStore';
+import { useThemeStore } from '../store/themeStore';
 import { useTablesWithZones, useUpdateTableStatus } from '../hooks/useDatabase';
-import { prepareKOTPrintData } from '../db/services/kotService';
-import { preparePrintData } from '../utils/printUtils';
 import TableTimer from '../components/TableTimer';
 import type { Table, ZoneWithTables } from '../db/types';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import LinearGradient from 'react-native-linear-gradient';
 import RefreshButton from '../components/RefreshButton';
+import LinearGradient from 'react-native-linear-gradient';
 
 const TablesScreen = () => {
   const navigation = useNavigation<any>();
   const { data: zonesWithTables, isLoading, refetch } = useTablesWithZones();
-  const updateStatusMutation = useUpdateTableStatus();
   const { logout, currentUser } = usePOSStore();
+  const { theme, isDarkMode } = useThemeStore();
+
+  const styles = getStyles(theme);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -35,14 +37,11 @@ const TablesScreen = () => {
 
   const handleLogout = () => {
     setShowProfileMenu(false);
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: () => logout(),
-      },
-    ]);
+    logout();
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'POSLogin' }],
+    });
   };
 
   const handleTablePress = (table: Table) => {
@@ -93,9 +92,6 @@ const TablesScreen = () => {
 
   const handlePrint = async (table: Table, event: any) => {
     event.stopPropagation();
-
-    // For now, just show an alert
-    // In a real implementation, you would get the latest KOT and print it
     Alert.alert('Print', `Print functionality for ${table.table_name}`);
   };
 
@@ -113,18 +109,28 @@ const TablesScreen = () => {
         onPress={() => handleTablePress(table)}
       >
         <View style={styles.tableHeader}>
-          <Ionicons
-            name={isActive ? 'people' : 'people-outline'}
-            size={24}
-            color={isActive ? '#FFFFFF' : '#7C3AED'}
-          />
+          <View
+            style={[
+              styles.iconBox,
+              isActive ? { backgroundColor: 'rgba(255,255,255,0.2)' } : {},
+            ]}
+          >
+            <Ionicons
+              name={isActive ? 'people' : 'people-outline'}
+              size={20}
+              color={isActive ? '#FFFFFF' : theme.colors.primary}
+            />
+          </View>
+
           <View
             style={[
               styles.statusBadge,
               isActive ? styles.statusBadgeActive : styles.statusBadgeEmpty,
             ]}
           >
-            <Text style={styles.statusText}>
+            <Text
+              style={[styles.statusText, isActive ? { color: '#FFF' } : {}]}
+            >
               {isActive ? 'Active' : 'Empty'}
             </Text>
           </View>
@@ -141,7 +147,11 @@ const TablesScreen = () => {
         {isActive && tableWithKOT.active_since && (
           <View style={styles.activeInfo}>
             <View style={styles.activeInfoRow}>
-              <Ionicons name="time-outline" size={14} color="#E9D5FF" />
+              <Ionicons
+                name="time-outline"
+                size={14}
+                color="rgba(255,255,255,0.8)"
+              />
               <TableTimer
                 activeSince={tableWithKOT.active_since}
                 style={styles.timerText}
@@ -149,7 +159,11 @@ const TablesScreen = () => {
             </View>
             {tableWithKOT.current_total > 0 && (
               <View style={styles.activeInfoRow}>
-                <Ionicons name="cash-outline" size={14} color="#E9D5FF" />
+                <Ionicons
+                  name="cash-outline"
+                  size={14}
+                  color="rgba(255,255,255,0.8)"
+                />
                 <Text style={styles.totalText}>
                   ₹{tableWithKOT.current_total.toFixed(2)}
                 </Text>
@@ -157,7 +171,11 @@ const TablesScreen = () => {
             )}
             {tableWithKOT.total_kots > 0 && (
               <View style={styles.activeInfoRow}>
-                <Ionicons name="receipt-outline" size={14} color="#E9D5FF" />
+                <Ionicons
+                  name="receipt-outline"
+                  size={14}
+                  color="rgba(255,255,255,0.8)"
+                />
                 <Text style={styles.kotCountText}>
                   {tableWithKOT.total_kots} KOT
                   {tableWithKOT.total_kots > 1 ? 's' : ''}
@@ -171,8 +189,10 @@ const TablesScreen = () => {
           <View style={styles.capacityContainer}>
             <Ionicons
               name="person"
-              size={16}
-              color={isActive ? '#FFFFFF' : '#7C3AED'}
+              size={14}
+              color={
+                isActive ? 'rgba(255,255,255,0.7)' : theme.colors.textSecondary
+              }
             />
             <Text style={[styles.capacity, isActive && styles.capacityActive]}>
               {table.capacity} seats
@@ -185,7 +205,7 @@ const TablesScreen = () => {
               style={styles.printButton}
               onPress={e => handlePrint(table, e)}
             >
-              <Ionicons name="print-outline" size={20} color="#FFFFFF" />
+              <Ionicons name="print-outline" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           )}
         </View>
@@ -196,7 +216,11 @@ const TablesScreen = () => {
   const renderZone = ({ item }: any) => (
     <View style={styles.zoneContainer}>
       <View style={styles.zoneHeader}>
-        <Ionicons name="location" size={24} color="#7C3AED" />
+        <Ionicons
+          name="location-sharp"
+          size={20}
+          color={theme.colors.primary}
+        />
         <Text style={styles.zoneName}>{item.name}</Text>
         <View style={styles.tableCount}>
           <Text style={styles.tableCountText}>{item.tables.length}</Text>
@@ -212,7 +236,7 @@ const TablesScreen = () => {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#7C3AED" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>Loading tables...</Text>
       </View>
     );
@@ -220,33 +244,38 @@ const TablesScreen = () => {
 
   return (
     <View style={styles.container}>
+      <StatusBar
+        backgroundColor={theme.colors.primary}
+        barStyle="light-content"
+      />
       {/* Enhanced Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={styles.menuButton}
               onPress={() => navigation.toggleDrawer()}
             >
-              <Ionicons name="menu" size={28} color="#FFFFFF" />
+              <Ionicons
+                name="menu"
+                size={28}
+                color={theme.colors.primaryForeground}
+              />
             </TouchableOpacity>
-            <View style={styles.logoContainer}>
-              <Ionicons name="restaurant" size={32} color="#FFFFFF" />
-            </View>
+
             <View>
               <Text style={styles.businessName}>My Restaurant</Text>
-              <Text style={styles.businessSubtitle}>Table Management</Text>
+              <Text style={styles.businessSubtitle}>Dashboard</Text>
             </View>
           </View>
-          <View style={styles.headerLeft}>{/* ... */}</View>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <RefreshButton
               onRefresh={async () => {
                 await refetch();
               }}
               loading={isLoading}
               style={{
-                marginRight: 12,
                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
               }}
             />
@@ -274,7 +303,11 @@ const TablesScreen = () => {
               style={styles.profileMenuItem}
               onPress={handleLogout}
             >
-              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+              <Ionicons
+                name="log-out-outline"
+                size={20}
+                color={theme.colors.error}
+              />
               <Text style={styles.profileMenuItemText}>Logout</Text>
             </TouchableOpacity>
           </View>
@@ -285,19 +318,23 @@ const TablesScreen = () => {
           <Ionicons
             name="search"
             size={20}
-            color="#9CA3AF"
+            color={theme.colors.textSecondary}
             style={styles.searchIcon}
           />
           <TextInput
             style={styles.searchInput}
             placeholder="Search tables..."
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={theme.colors.textSecondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+              <Ionicons
+                name="close-circle"
+                size={20}
+                color={theme.colors.textSecondary}
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -314,7 +351,11 @@ const TablesScreen = () => {
         onRefresh={refetch}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={64} color="#D1D5DB" />
+            <Ionicons
+              name="search-outline"
+              size={64}
+              color={theme.colors.textSecondary}
+            />
             <Text style={styles.emptyStateText}>No tables found</Text>
           </View>
         }
@@ -322,18 +363,16 @@ const TablesScreen = () => {
 
       {/* Start Table Button */}
       <TouchableOpacity
-        style={styles.startTableButtonContainer}
+        style={styles.fabContainer}
         onPress={() => setShowStartTableModal(true)}
       >
-        <LinearGradient
-          colors={['#7C3AED', '#A855F7']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.startTableButton}
-        >
-          <Ionicons name="add-circle-outline" size={24} color="#FFFFFF" />
-          <Text style={styles.startTableButtonText}>Start Table</Text>
-        </LinearGradient>
+        <View style={styles.fab}>
+          <Ionicons
+            name="add"
+            size={32}
+            color={theme.colors.primaryForeground}
+          />
+        </View>
       </TouchableOpacity>
 
       {/* Start Table Modal */}
@@ -343,40 +382,46 @@ const TablesScreen = () => {
         transparent={true}
         onRequestClose={() => setShowStartTableModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowStartTableModal(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Empty Table</Text>
               <TouchableOpacity onPress={() => setShowStartTableModal(false)}>
-                <Ionicons name="close" size={28} color="#6B7280" />
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={theme.colors.textSecondary}
+                />
               </TouchableOpacity>
             </View>
 
-            {/* Modal Search */}
             <View style={styles.modalSearchContainer}>
               <Ionicons
                 name="search"
                 size={20}
-                color="#9CA3AF"
+                color={theme.colors.textSecondary}
                 style={styles.searchIcon}
               />
               <TextInput
                 style={styles.modalSearchInput}
                 placeholder="Search empty tables..."
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={theme.colors.textSecondary}
                 value={modalSearchQuery}
                 onChangeText={setModalSearchQuery}
               />
             </View>
 
-            {/* Empty Tables List */}
             <ScrollView style={styles.modalTablesList}>
               {emptyTables.length === 0 ? (
                 <View style={styles.modalEmptyState}>
                   <Ionicons
                     name="checkmark-circle-outline"
                     size={64}
-                    color="#D1D5DB"
+                    color={theme.colors.textSecondary}
                   />
                   <Text style={styles.modalEmptyStateText}>
                     {modalSearchQuery
@@ -400,7 +445,11 @@ const TablesScreen = () => {
                       </Text>
                     </View>
                     <View style={styles.modalTableCapacity}>
-                      <Ionicons name="person" size={16} color="#7C3AED" />
+                      <Ionicons
+                        name="person"
+                        size={16}
+                        color={theme.colors.primary}
+                      />
                       <Text style={styles.modalTableCapacityText}>
                         {table.capacity}
                       </Text>
@@ -409,416 +458,407 @@ const TablesScreen = () => {
                 ))
               )}
             </ScrollView>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  header: {
-    backgroundColor: '#7C3AED',
-    paddingTop: 48,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  logoContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  businessName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  businessSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  profileButton: {
-    padding: 4,
-  },
-  profileAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileInitial: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#7C3AED',
-  },
-  profileMenu: {
-    position: 'absolute',
-    top: 100,
-    right: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 8,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    minWidth: 200,
-    zIndex: 1000,
-  },
-  profileMenuHeader: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  profileMenuName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  profileMenuPhone: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  profileMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-  },
-  profileMenuItemText: {
-    fontSize: 16,
-    color: '#EF4444',
-    marginLeft: 12,
-    fontWeight: '500',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 48,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  zoneContainer: {
-    marginBottom: 24,
-  },
-  zoneHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 4,
-  },
-  zoneName: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#111827',
-    marginLeft: 8,
-    flex: 1,
-  },
-  tableCount: {
-    backgroundColor: '#7C3AED',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  tableCountText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  tablesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -6,
-  },
-  tableCard: {
-    width: '48%',
-    margin: '1%',
-    padding: 16,
-    borderRadius: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  tableCardEmpty: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-  },
-  tableCardActive: {
-    backgroundColor: '#7C3AED',
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusBadgeEmpty: {
-    backgroundColor: '#F3F4F6',
-  },
-  statusBadgeActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  tableName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  tableNameActive: {
-    color: '#FFFFFF',
-  },
-  tableCode: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 12,
-  },
-  tableCodeActive: {
-    color: '#E9D5FF',
-  },
-  activeInfo: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.2)',
-    gap: 6,
-  },
-  activeInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  timerText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#E9D5FF',
-    fontFamily: 'Ubuntu-Bold',
-  },
-  totalText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    fontFamily: 'Ubuntu-Bold',
-  },
-  kotCountText: {
-    fontSize: 12,
-    color: '#E9D5FF',
-    fontFamily: 'Ubuntu-Regular',
-  },
-  tableFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  capacityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  capacity: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginLeft: 6,
-  },
-  capacityActive: {
-    color: '#FFFFFF',
-  },
-  printButton: {
-    padding: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#9CA3AF',
-    marginTop: 16,
-  },
-  startTableButtonContainer: {
-    position: 'absolute',
-    bottom: 24,
-    left: 16,
-    right: 16,
-  },
-  startTableButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 16,
-    elevation: 8,
-    shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-  },
-  startTableButtonText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 24,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  modalSearchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 48,
-    marginHorizontal: 24,
-    marginBottom: 16,
-  },
-  modalSearchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-  },
-  modalTablesList: {
-    paddingHorizontal: 24,
-  },
-  modalTableItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  modalTableInfo: {
-    flex: 1,
-  },
-  modalTableName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  modalTableZone: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  modalTableCapacity: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EDE9FE',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  modalTableCapacityText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#7C3AED',
-    marginLeft: 4,
-  },
-  modalEmptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
-  },
-  modalEmptyStateText: {
-    fontSize: 16,
-    color: '#9CA3AF',
-    marginTop: 16,
-  },
-});
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: theme.colors.background,
+    },
+    loadingText: {
+      marginTop: 16,
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+    },
+    header: {
+      backgroundColor: theme.colors.primary,
+      paddingTop: 16, // Assuming SafeAreaView handles status bar, else increase
+      paddingBottom: 24,
+      paddingHorizontal: 20,
+      borderBottomLeftRadius: 32,
+      borderBottomRightRadius: 32,
+      ...theme.shadows.card,
+    },
+    headerTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    menuButton: {
+      marginRight: 16,
+    },
+    businessName: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: theme.colors.primaryForeground,
+    },
+    businessSubtitle: {
+      fontSize: 14,
+      color: 'rgba(255, 255, 255, 0.8)',
+    },
+    profileButton: {
+      padding: 2,
+      borderWidth: 2,
+      borderColor: 'rgba(255,255,255,0.4)',
+      borderRadius: 24,
+    },
+    profileAvatar: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: theme.colors.surface,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    profileInitial: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.colors.primary,
+    },
+    profileMenu: {
+      position: 'absolute',
+      top: 70,
+      right: 20,
+      backgroundColor: theme.colors.surface,
+      borderRadius: 16,
+      padding: 8,
+      ...theme.shadows.card,
+      minWidth: 200,
+      zIndex: 1000,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    profileMenuHeader: {
+      padding: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    },
+    profileMenuName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+    },
+    profileMenuPhone: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      marginTop: 2,
+    },
+    profileMenuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 12,
+    },
+    profileMenuItemText: {
+      fontSize: 16,
+      color: theme.colors.error,
+      marginLeft: 12,
+      fontWeight: '500',
+    },
+    searchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      height: 48,
+    },
+    searchIcon: {
+      marginRight: 12,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 16,
+      color: theme.colors.text,
+      height: '100%',
+    },
+    listContent: {
+      padding: 20,
+      paddingBottom: 100,
+    },
+    zoneContainer: {
+      marginBottom: 24,
+    },
+    zoneHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 16,
+      paddingHorizontal: 4,
+    },
+    zoneName: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginLeft: 8,
+      flex: 1,
+    },
+    tableCount: {
+      backgroundColor: theme.colors.surfaceHighlight,
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    tableCountText: {
+      color: theme.colors.primary,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    tablesGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginHorizontal: -6,
+    },
+    tableCard: {
+      width: '48%',
+      margin: '1%',
+      padding: 16,
+      borderRadius: 16,
+      ...theme.shadows.card,
+      minHeight: 140,
+      justifyContent: 'space-between',
+    },
+    tableCardEmpty: {
+      backgroundColor: theme.colors.surface,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    tableCardActive: {
+      backgroundColor: theme.colors.primary,
+    },
+    tableHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    iconBox: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      backgroundColor: theme.colors.surfaceHighlight,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    statusBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    statusBadgeEmpty: {
+      backgroundColor: theme.colors.surfaceHighlight,
+    },
+    statusBadgeActive: {
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    },
+    statusText: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: theme.colors.textSecondary,
+      textTransform: 'uppercase',
+    },
+    tableName: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: theme.colors.text,
+      marginBottom: 2,
+    },
+    tableNameActive: {
+      color: '#FFFFFF',
+    },
+    tableCode: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      marginBottom: 8,
+    },
+    tableCodeActive: {
+      color: 'rgba(255,255,255,0.7)',
+    },
+    activeInfo: {
+      marginTop: 8,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(255, 255, 255, 0.2)',
+      gap: 4,
+    },
+    activeInfoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    timerText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: '#FFFFFF',
+    },
+    totalText: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: '#FFFFFF',
+    },
+    kotCountText: {
+      fontSize: 12,
+      color: 'rgba(255,255,255,0.9)',
+    },
+    tableFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 12,
+    },
+    capacityContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    capacity: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      fontWeight: '500',
+    },
+    capacityActive: {
+      color: 'rgba(255,255,255,0.8)',
+    },
+    printButton: {
+      padding: 6,
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      borderRadius: 8,
+    },
+    emptyState: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 64,
+    },
+    emptyStateText: {
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      marginTop: 16,
+    },
+    fabContainer: {
+      position: 'absolute',
+      bottom: 24,
+      right: 24,
+    },
+    fab: {
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      elevation: 8,
+      shadowColor: theme.colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: theme.colors.surface,
+      borderTopLeftRadius: 32,
+      borderTopRightRadius: 32,
+      paddingTop: 24,
+      maxHeight: '90%',
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+      marginBottom: 20,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: theme.colors.text,
+    },
+    modalSearchContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.background,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      height: 52,
+      marginHorizontal: 24,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    modalSearchInput: {
+      flex: 1,
+      fontSize: 16,
+      color: theme.colors.text,
+    },
+    modalTablesList: {
+      paddingHorizontal: 24,
+    },
+    modalTableItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: 16,
+      backgroundColor: theme.colors.surface,
+      borderRadius: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      ...theme.shadows.card,
+    },
+    modalTableInfo: {
+      flex: 1,
+    },
+    modalTableName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.text,
+      marginBottom: 4,
+    },
+    modalTableZone: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+    },
+    modalTableCapacity: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: theme.colors.surfaceHighlight,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 8,
+    },
+    modalTableCapacityText: {
+      color: theme.colors.primary,
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    modalEmptyState: {
+      padding: 32,
+      alignItems: 'center',
+    },
+    modalEmptyStateText: {
+      marginTop: 16,
+      color: theme.colors.textSecondary,
+      fontSize: 16,
+    },
+  });
 
 export default TablesScreen;

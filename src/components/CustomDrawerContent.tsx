@@ -9,35 +9,46 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../store/authStore';
 
-export default function CustomDrawerContent(props: DrawerContentComponentProps) {
-  const logout = useAuthStore((state) => state.logout);
+export default function CustomDrawerContent(
+  props: DrawerContentComponentProps,
+) {
+  const logout = useAuthStore(state => state.logout);
+  // @ts-ignore - navigation is available in props
+  const navigation = props.navigation;
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: () => {
+          // 1. Clear State
+          logout();
+
+          // 2. Reset Navigation to Login
+          // We need to go back to the root navigator's stack
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'POSLogin' }],
+          });
         },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => {
-            logout();
-          },
-        },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollContent}>
+      <DrawerContentScrollView
+        {...props}
+        contentContainerStyle={styles.scrollContent}
+      >
         <DrawerItemList {...props} />
       </DrawerContentScrollView>
-      
+
       <View style={styles.footer}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out" size={24} color="#F44336" />
