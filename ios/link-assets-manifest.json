@@ -1,0 +1,21 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "assets/fonts/Ubuntu-Bold.ttf",
+      "sha1": "c85f33bc4a1416a8909d8fde4bd28fd8cbd30d86"
+    },
+    {
+      "path": "assets/fonts/Ubuntu-Light.ttf",
+      "sha1": "719afa6b3290c47d3ef42288d5ee9d255bb8a509"
+    },
+    {
+      "path": "assets/fonts/Ubuntu-Medium.ttf",
+      "sha1": "249d1f77b186bcd1f9af12001c760ebf1e9f9bdf"
+    },
+    {
+      "path": "assets/fonts/Ubuntu-Regular.ttf",
+      "sha1": "c1f6487b64a85c144bc0357832fc79b905dfbcb1"
+    }
+  ]
+}
