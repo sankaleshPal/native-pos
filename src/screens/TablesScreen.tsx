@@ -139,9 +139,9 @@ const TablesScreen = () => {
         <Text style={[styles.tableName, isActive && styles.tableNameActive]}>
           {table.table_name}
         </Text>
-        <Text style={[styles.tableCode, isActive && styles.tableCodeActive]}>
-          {table.table_code}
-        </Text>
+        {isActive && (
+          <Text style={styles.tableCodeActive}>{table.table_code}</Text>
+        )}
 
         {/* Active Table Info */}
         {isActive && tableWithKOT.active_since && (
@@ -484,7 +484,7 @@ const getStyles = (theme: any) =>
     },
     header: {
       backgroundColor: theme.colors.primary,
-      paddingTop: 16, // Assuming SafeAreaView handles status bar, else increase
+      paddingTop: 48, // Increased for status bar
       paddingBottom: 24,
       paddingHorizontal: 20,
       borderBottomLeftRadius: 32,

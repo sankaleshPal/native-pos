@@ -10,6 +10,8 @@ export const getDatabase = (): ReturnType<typeof open> => {
   return db;
 };
 
+export const getDBConnection = getDatabase;
+
 const initializeDatabase = async () => {
   if (!db) return;
 
