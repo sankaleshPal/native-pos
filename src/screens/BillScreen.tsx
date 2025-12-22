@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
 import { create } from 'zustand';
 import { settleBill } from '../db/services/billService';
-import { useBill, useSettleBill, useCreateBill } from '../hooks/useDatabase';
+import { useBill, useSettleBill } from '../hooks/useDatabase';
+import { useThemeStore } from '../store/themeStore';
+import { Theme } from '../theme/types';
 import { Bill, KOT, KOTItem, BillWithKOTs, PaymentMode } from '../db/types';
 import { formatKOTDateTime } from '../utils/timeUtils';
 import { useModalStore } from '../store/modalStore';
@@ -39,81 +41,43 @@ const useBillScreenStore = create<BillScreenState>()(set => ({
   setSettling: settling => set({ settling }),
 }));
 
+// ... (imports remain same, remove zustand if redundant or keep if needed for store, it is used here)
+
 const BillScreen = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { table } = route.params || {};
+  const { theme } = useThemeStore();
+  const styles = getStyles(theme);
 
-  const {
-    bill: storedBill,
-    loading,
-    settling,
-    setBill,
-    setLoading,
-    setSettling,
-  } = useBillScreenStore();
+  const { settling, setSettling } = useBillScreenStore();
   const { showPaymentModal } = useModalStore();
   const { currentUser } = usePOSStore();
 
   // React Query Hooks
   const { data: billData, isLoading, refetch } = useBill(table?.id);
   const settleBillMutation = useSettleBill();
-  const createBillMutation = useCreateBill();
 
   // Use data from React Query
   const bill = billData || null;
 
-  // Sync loading state if needed by store, or just use isLoading local var
-  // For now, we ignore store loading/bill state for fetching and use RQ directly
-
-  // Auto-create bill if it doesn't exist
-  useEffect(() => {
-    if (
-      table?.id &&
-      !isLoading &&
-      !bill &&
-      !createBillMutation.isPending &&
-      !createBillMutation.isSuccess
-    ) {
-      createBillMutation.mutate(table.id);
-    }
-  }, [
-    table?.id,
-    isLoading,
-    bill,
-    createBillMutation.isPending,
-    createBillMutation.isSuccess,
-  ]);
-
-  /* 
-  // Old loadOrCreateBill logic removed
-  */
-
   const handleSettle = () => {
+    if (!bill) return;
     showPaymentModal();
   };
 
   const handleConfirmPayment = async (paymentMode: PaymentMode) => {
-    if (!bill || !currentUser) return;
-
+    if (!bill) return;
     setSettling(true);
     try {
       await settleBillMutation.mutateAsync({
         billId: bill.id,
         paymentMode,
-        settledBy: currentUser.name,
-        tableId: table.id,
+        settledBy: currentUser?.name || 'Staff',
+        tableId: table?.id,
       });
-
-      Alert.alert('Success', 'Bill settled successfully!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            // Navigate back to tables screen
-            navigation.navigate('Dashboard', { screen: 'Tables' });
-          },
-        },
-      ]);
+      Alert.alert('Success', 'Bill settled successfully');
+      navigation.goBack();
     } catch (error) {
       console.error('Error settling bill:', error);
       Alert.alert('Error', 'Failed to settle bill');
@@ -130,12 +94,16 @@ const BillScreen = () => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color={theme.colors.textInverse}
+            />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Bill</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#7C3AED" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Loading bill...</Text>
         </View>
       </View>
@@ -150,12 +118,20 @@ const BillScreen = () => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color={theme.colors.textInverse}
+            />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Bill</Text>
         </View>
         <View style={styles.emptyState}>
-          <Ionicons name="document-text-outline" size={80} color="#D1D5DB" />
+          <Ionicons
+            name="document-text-outline"
+            size={80}
+            color={theme.colors.textMuted}
+          />
           <Text style={styles.emptyText}>No bill available</Text>
         </View>
       </View>
@@ -170,7 +146,11 @@ const BillScreen = () => {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={theme.colors.textInverse}
+          />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>Bill</Text>
@@ -183,7 +163,7 @@ const BillScreen = () => {
           loading={isLoading}
           style={{
             marginRight: 8,
-            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            backgroundColor: theme.colors.card,
           }}
         />
         <View style={styles.billBadge}>
@@ -250,13 +230,13 @@ const BillScreen = () => {
           disabled={settling}
         >
           <LinearGradient
-            colors={['#7C3AED', '#A855F7']}
+            colors={[theme.colors.primary, theme.colors.primary]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.settleGradient}
           >
             {settling ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={theme.colors.textInverse} />
             ) : (
               <Text style={styles.settleText}>
                 Settle Bill • ₹{bill.total.toFixed(2)}
@@ -272,196 +252,190 @@ const BillScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9FAFB',
-  },
-  header: {
-    backgroundColor: '#7C3AED',
-    paddingTop: 48,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: {
-    padding: 8,
-    marginRight: 12,
-  },
-  headerInfo: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    fontFamily: 'Ubuntu-Bold',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#E9D5FF',
-    marginTop: 4,
-    fontFamily: 'Ubuntu-Regular',
-  },
-  billBadge: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  billNumber: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#7C3AED',
-    fontFamily: 'Ubuntu-Bold',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#6B7280',
-    fontFamily: 'Ubuntu-Regular',
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#9CA3AF',
-    marginTop: 16,
-    fontFamily: 'Ubuntu-Bold',
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 12,
-    fontFamily: 'Ubuntu-Bold',
-  },
-  kotSummary: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-  },
-  kotHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  kotId: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#7C3AED',
-    fontFamily: 'Ubuntu-Bold',
-  },
-  kotTime: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontFamily: 'Ubuntu-Regular',
-  },
-  kotDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  kotItems: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontFamily: 'Ubuntu-Regular',
-  },
-  kotTotal: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Ubuntu-Bold',
-  },
-  totalsSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  totalLabel: {
-    fontSize: 16,
-    color: '#6B7280',
-    fontFamily: 'Ubuntu-Regular',
-  },
-  totalValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    fontFamily: 'Ubuntu-Bold',
-  },
-  grandTotalRow: {
-    paddingTop: 12,
-    borderTopWidth: 2,
-    borderTopColor: '#E5E7EB',
-    marginTop: 4,
-    marginBottom: 0,
-  },
-  grandTotalLabel: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
-    fontFamily: 'Ubuntu-Bold',
-  },
-  grandTotalValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#7C3AED',
-    fontFamily: 'Ubuntu-Bold',
-  },
-  footer: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-  },
-  settleButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  settleGradient: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  settleText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    fontFamily: 'Ubuntu-Bold',
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background,
+    },
+    header: {
+      backgroundColor: theme.colors.primary,
+      paddingTop: 48,
+      paddingBottom: 16,
+      paddingHorizontal: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    backButton: {
+      padding: 8,
+      marginRight: 12,
+    },
+    headerInfo: {
+      flex: 1,
+    },
+    headerTitle: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: theme.colors.textInverse,
+      fontFamily: 'Ubuntu-Bold',
+    },
+    headerSubtitle: {
+      fontSize: 14,
+      color: theme.colors.textInverse,
+      marginTop: 4,
+      fontFamily: 'Ubuntu-Regular',
+      opacity: 0.8,
+    },
+    billBadge: {
+      backgroundColor: theme.colors.surface,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 12,
+    },
+    billNumber: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: theme.colors.primary,
+      fontFamily: 'Ubuntu-Bold',
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 40,
+    },
+    loadingText: {
+      marginTop: 16,
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      fontFamily: 'Ubuntu-Regular',
+    },
+    emptyState: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 40,
+    },
+    emptyText: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: theme.colors.textMuted,
+      marginTop: 16,
+      fontFamily: 'Ubuntu-Bold',
+    },
+    content: {
+      flex: 1,
+      padding: 16,
+    },
+    section: {
+      marginBottom: 24,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: theme.colors.textPrimary,
+      marginBottom: 12,
+      fontFamily: 'Ubuntu-Bold',
+    },
+    kotSummary: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 12,
+      ...theme.shadows.level1,
+    },
+    kotHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    kotId: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: theme.colors.primary,
+      fontFamily: 'Ubuntu-Bold',
+    },
+    kotTime: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      fontFamily: 'Ubuntu-Regular',
+    },
+    kotDetails: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    kotItems: {
+      fontSize: 14,
+      color: theme.colors.textSecondary,
+      fontFamily: 'Ubuntu-Regular',
+    },
+    kotTotal: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: theme.colors.textPrimary,
+      fontFamily: 'Ubuntu-Bold',
+    },
+    totalsSection: {
+      backgroundColor: theme.colors.surface,
+      borderRadius: 12,
+      padding: 20,
+      ...theme.shadows.level1,
+    },
+    totalRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 12,
+    },
+    totalLabel: {
+      fontSize: 16,
+      color: theme.colors.textSecondary,
+      fontFamily: 'Ubuntu-Regular',
+    },
+    totalValue: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: theme.colors.textPrimary,
+      fontFamily: 'Ubuntu-Bold',
+    },
+    grandTotalRow: {
+      paddingTop: 12,
+      borderTopWidth: 2,
+      borderTopColor: theme.colors.border,
+      marginTop: 4,
+      marginBottom: 0,
+    },
+    grandTotalLabel: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: theme.colors.textPrimary,
+      fontFamily: 'Ubuntu-Bold',
+    },
+    grandTotalValue: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      color: theme.colors.primary,
+      fontFamily: 'Ubuntu-Bold',
+    },
+    footer: {
+      padding: 20,
+      backgroundColor: theme.colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.border,
+    },
+    settleButton: {
+      borderRadius: 16,
+      overflow: 'hidden',
+    },
+    settleGradient: {
+      paddingVertical: 16,
+      alignItems: 'center',
+    },
+    settleText: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      color: theme.colors.textInverse,
+      fontFamily: 'Ubuntu-Bold',
+    },
+  });
 
 export default BillScreen;

@@ -13,6 +13,8 @@ import { getDefaultPortion, dishHasVariants } from '../utils/cartHelpers';
 import DishDetailModal from './DishDetailModal';
 import VariantDecrementModal from './VariantDecrementModal';
 import type { Dish, DishWithDetails } from '../db/types';
+import { useThemeStore } from '../store/themeStore';
+import { Theme } from '../theme/types';
 
 interface DishQuantityButtonProps {
   dish: Dish;
@@ -25,11 +27,15 @@ const DishQuantityButton: React.FC<DishQuantityButtonProps> = ({ dish }) => {
     getCartItemsForDish,
     addToCart,
   } = useCartStore();
+  const { theme } = useThemeStore();
+  const styles = getStyles(theme);
 
   const [showDishModal, setShowDishModal] = useState(false);
   const [showDecrementModal, setShowDecrementModal] = useState(false);
   const [dishDetails, setDishDetails] = useState<DishWithDetails | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // ... (rest of logic same)
 
   const totalQuantity = getTotalQuantityForDish(dish.id);
   const multipleVariants = hasMultipleVariants(dish.id);
@@ -52,18 +58,15 @@ const DishQuantityButton: React.FC<DishQuantityButtonProps> = ({ dish }) => {
     const details = await loadDishDetails();
     if (!details) return;
 
-    // If dish has portions or add-ons, show modal
     if (dishHasVariants(details)) {
       setShowDishModal(true);
     } else {
-      // Add directly with default portion (or null if no portions)
       const defaultPortion = getDefaultPortion(details);
       addToCart(details, defaultPortion!, [], 1);
     }
   };
 
   const handleIncrement = async () => {
-    // Always open dish modal to allow user to customize or repeat last
     const details = await loadDishDetails();
     if (details) {
       setShowDishModal(true);
@@ -72,10 +75,8 @@ const DishQuantityButton: React.FC<DishQuantityButtonProps> = ({ dish }) => {
 
   const handleDecrement = () => {
     if (multipleVariants) {
-      // Show modal to select which variant to decrement
       setShowDecrementModal(true);
     } else {
-      // Single variant - decrement directly
       const items = getCartItemsForDish(dish.id);
       if (items.length > 0) {
         const { decrementVariant } = useCartStore.getState();
@@ -87,7 +88,7 @@ const DishQuantityButton: React.FC<DishQuantityButtonProps> = ({ dish }) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#7C3AED" />
+        <ActivityIndicator size="small" color={theme.colors.primary} />
       </View>
     );
   }
@@ -95,30 +96,27 @@ const DishQuantityButton: React.FC<DishQuantityButtonProps> = ({ dish }) => {
   return (
     <>
       {totalQuantity === 0 ? (
-        // Show ADD button
         <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
           <Text style={styles.addButtonText}>ADD</Text>
         </TouchableOpacity>
       ) : (
-        // Show quantity controls
         <View style={styles.quantityControl}>
           <TouchableOpacity
             style={styles.quantityButton}
             onPress={handleDecrement}
           >
-            <Ionicons name="remove" size={16} color="#7C3AED" />
+            <Ionicons name="remove" size={16} color={theme.colors.primary} />
           </TouchableOpacity>
           <Text style={styles.quantityText}>{totalQuantity}</Text>
           <TouchableOpacity
             style={styles.quantityButton}
             onPress={handleIncrement}
           >
-            <Ionicons name="add" size={16} color="#7C3AED" />
+            <Ionicons name="add" size={16} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Dish Detail Modal */}
       {dishDetails && (
         <DishDetailModal
           visible={showDishModal}
@@ -130,7 +128,6 @@ const DishQuantityButton: React.FC<DishQuantityButtonProps> = ({ dish }) => {
         />
       )}
 
-      {/* Variant Decrement Modal */}
       <VariantDecrementModal
         visible={showDecrementModal}
         dishId={dish.id}
@@ -141,50 +138,51 @@ const DishQuantityButton: React.FC<DishQuantityButtonProps> = ({ dish }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    width: 80,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButton: {
-    backgroundColor: '#7C3AED',
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignItems: 'center',
-    minWidth: 80,
-  },
-  addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-    fontFamily: 'Ubuntu-Bold',
-  },
-  quantityControl: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#7C3AED',
-    minWidth: 80,
-  },
-  quantityButton: {
-    padding: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quantityText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginHorizontal: 12,
-    fontFamily: 'Ubuntu-Bold',
-    minWidth: 20,
-    textAlign: 'center',
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    loadingContainer: {
+      width: 80,
+      height: 36,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    addButton: {
+      backgroundColor: theme.colors.primary,
+      paddingVertical: 8,
+      paddingHorizontal: 20,
+      borderRadius: 8,
+      alignItems: 'center',
+      minWidth: 80,
+    },
+    addButtonText: {
+      color: theme.colors.textInverse, // or primaryForeground if strict mapping
+      fontSize: 14,
+      fontWeight: 'bold',
+      fontFamily: 'Ubuntu-Bold',
+    },
+    quantityControl: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.surface,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.primary,
+      minWidth: 80,
+    },
+    quantityButton: {
+      padding: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    quantityText: {
+      fontSize: 14,
+      fontWeight: 'bold',
+      color: theme.colors.textPrimary,
+      marginHorizontal: 12,
+      fontFamily: 'Ubuntu-Bold',
+      minWidth: 20,
+      textAlign: 'center',
+    },
+  });
 
 export default DishQuantityButton;

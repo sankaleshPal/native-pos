@@ -10,38 +10,23 @@ import {
 import { useThemeStore } from '../store/themeStore';
 import { useNavigation } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Theme } from '../theme/types';
 
 const ThemeSettingsScreen = () => {
   const navigation = useNavigation<any>();
-  const { theme, isDarkMode, setTheme } = useThemeStore();
+  const { theme, currentThemeId, setThemeId, availableThemes } =
+    useThemeStore();
   const styles = getStyles(theme);
 
-  const themeOptions = [
-    {
-      id: 'light',
-      name: 'Light Mode',
-      description: 'Clean and bright interface',
-      icon: 'sunny',
-      value: false,
-    },
-    {
-      id: 'dark',
-      name: 'Dark Mode',
-      description: 'Easy on the eyes',
-      icon: 'moon',
-      value: true,
-    },
-  ];
-
-  const handleThemeSelect = (darkMode: boolean) => {
-    setTheme(darkMode);
+  const handleThemeSelect = (id: string) => {
+    setThemeId(id);
   };
 
   return (
     <View style={styles.container}>
       <StatusBar
         backgroundColor={theme.colors.primary}
-        barStyle="light-content"
+        barStyle={theme.isDark ? 'light-content' : 'dark-content'}
       />
 
       {/* Header */}
@@ -53,53 +38,63 @@ const ThemeSettingsScreen = () => {
           <Ionicons
             name="arrow-back"
             size={24}
-            color={theme.colors.primaryForeground}
+            color={theme.colors.textInverse}
           />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
           <Text style={styles.headerTitle}>Theme Settings</Text>
-          <Text style={styles.headerSubtitle}>Choose your preferred theme</Text>
+          <Text style={styles.headerSubtitle}>Choose your preferred look</Text>
         </View>
       </View>
 
       {/* Theme Options */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
+          <Text style={styles.sectionTitle}>Available Themes</Text>
 
-          {themeOptions.map(option => {
-            const isSelected = isDarkMode === option.value;
+          {availableThemes.map(item => {
+            const isSelected = currentThemeId === item.id;
 
             return (
               <TouchableOpacity
-                key={option.id}
+                key={item.id}
                 style={[
                   styles.themeCard,
                   isSelected && styles.themeCardSelected,
                 ]}
-                onPress={() => handleThemeSelect(option.value)}
+                onPress={() => handleThemeSelect(item.id)}
               >
                 <View style={styles.themeCardLeft}>
+                  {/* Theme Preview Circle */}
                   <View
                     style={[
-                      styles.iconBox,
-                      isSelected && styles.iconBoxSelected,
+                      styles.previewCircle,
+                      { backgroundColor: item.colors.background }, // Use the theme's background
                     ]}
                   >
-                    <Ionicons
-                      name={option.icon}
-                      size={24}
-                      color={
-                        isSelected
-                          ? theme.colors.primaryForeground
-                          : theme.colors.primary
-                      }
+                    <View
+                      style={[
+                        styles.previewDot,
+                        { backgroundColor: item.colors.primary },
+                      ]}
                     />
                   </View>
+
                   <View style={styles.themeInfo}>
-                    <Text style={styles.themeName}>{option.name}</Text>
+                    <Text
+                      style={[
+                        styles.themeName,
+                        {
+                          color: isSelected
+                            ? theme.colors.primary
+                            : theme.colors.textPrimary,
+                        },
+                      ]}
+                    >
+                      {item.name}
+                    </Text>
                     <Text style={styles.themeDescription}>
-                      {option.description}
+                      {item.isDark ? 'Dark Mode' : 'Light Mode'}
                     </Text>
                   </View>
                 </View>
@@ -108,7 +103,7 @@ const ThemeSettingsScreen = () => {
                   <View style={styles.checkmark}>
                     <Ionicons
                       name="checkmark-circle"
-                      size={28}
+                      size={24}
                       color={theme.colors.primary}
                     />
                   </View>
@@ -116,23 +111,6 @@ const ThemeSettingsScreen = () => {
               </TouchableOpacity>
             );
           })}
-        </View>
-
-        {/* Preview Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preview</Text>
-          <View style={styles.previewCard}>
-            <View style={styles.previewHeader}>
-              <View style={styles.previewDot} />
-              <View style={styles.previewDot} />
-              <View style={styles.previewDot} />
-            </View>
-            <View style={styles.previewContent}>
-              <View style={styles.previewLine} />
-              <View style={styles.previewLine} />
-              <View style={[styles.previewLine, { width: '60%' }]} />
-            </View>
-          </View>
         </View>
 
         {/* Info Section */}
@@ -143,8 +121,7 @@ const ThemeSettingsScreen = () => {
             color={theme.colors.primary}
           />
           <Text style={styles.infoText}>
-            Theme preference is saved automatically and will persist across app
-            restarts.
+            Selected theme is saved and applied globally across the application.
           </Text>
         </View>
       </ScrollView>
@@ -152,7 +129,7 @@ const ThemeSettingsScreen = () => {
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = (theme: Theme) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -167,7 +144,7 @@ const getStyles = (theme: any) =>
       borderBottomRightRadius: 24,
       flexDirection: 'row',
       alignItems: 'center',
-      ...theme.shadows.card,
+      ...theme.shadows.level2,
     },
     backButton: {
       marginRight: 16,
@@ -179,12 +156,15 @@ const getStyles = (theme: any) =>
     headerTitle: {
       fontSize: 20,
       fontWeight: '700',
-      color: theme.colors.primaryForeground,
+      color: theme.colors.textInverse,
+      fontFamily: 'Ubuntu-Bold',
     },
     headerSubtitle: {
       fontSize: 14,
-      color: 'rgba(255, 255, 255, 0.8)',
+      color: theme.colors.textInverse,
       marginTop: 2,
+      opacity: 0.8,
+      fontFamily: 'Ubuntu-Regular',
     },
     content: {
       flex: 1,
@@ -196,8 +176,9 @@ const getStyles = (theme: any) =>
     sectionTitle: {
       fontSize: 16,
       fontWeight: '700',
-      color: theme.colors.text,
+      color: theme.colors.textPrimary,
       marginBottom: 16,
+      fontFamily: 'Ubuntu-Bold',
     },
     themeCard: {
       flexDirection: 'row',
@@ -208,88 +189,68 @@ const getStyles = (theme: any) =>
       padding: 16,
       marginBottom: 12,
       borderWidth: 2,
-      borderColor: theme.colors.border,
-      ...theme.shadows.card,
+      borderColor: 'transparent',
+      ...theme.shadows.level1,
     },
     themeCardSelected: {
       borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.surfaceHighlight,
+      backgroundColor: theme.colors.card,
     },
     themeCardLeft: {
       flexDirection: 'row',
       alignItems: 'center',
       flex: 1,
     },
-    iconBox: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: theme.colors.surfaceHighlight,
+    previewCircle: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       justifyContent: 'center',
       alignItems: 'center',
       marginRight: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
     },
-    iconBoxSelected: {
-      backgroundColor: theme.colors.primary,
+    previewDot: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
     },
     themeInfo: {
       flex: 1,
     },
     themeName: {
-      fontSize: 18,
+      fontSize: 16,
       fontWeight: '600',
-      color: theme.colors.text,
+      color: theme.colors.textPrimary,
       marginBottom: 4,
+      fontFamily: 'Ubuntu-Bold',
     },
     themeDescription: {
-      fontSize: 14,
+      fontSize: 12,
       color: theme.colors.textSecondary,
+      fontFamily: 'Ubuntu-Regular',
     },
     checkmark: {
       marginLeft: 12,
     },
-    previewCard: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 16,
-      padding: 16,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      ...theme.shadows.card,
-    },
-    previewHeader: {
-      flexDirection: 'row',
-      gap: 8,
-      marginBottom: 16,
-    },
-    previewDot: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-      backgroundColor: theme.colors.primary,
-    },
-    previewContent: {
-      gap: 12,
-    },
-    previewLine: {
-      height: 12,
-      backgroundColor: theme.colors.surfaceHighlight,
-      borderRadius: 6,
-      width: '100%',
-    },
     infoBox: {
       flexDirection: 'row',
-      backgroundColor: theme.colors.surfaceHighlight,
+      backgroundColor: theme.colors.surface,
       borderRadius: 12,
       padding: 16,
       gap: 12,
       borderLeftWidth: 4,
       borderLeftColor: theme.colors.primary,
+      alignItems: 'center',
+      ...theme.shadows.level1,
     },
     infoText: {
       flex: 1,
       fontSize: 14,
       color: theme.colors.textSecondary,
       lineHeight: 20,
+      fontFamily: 'Ubuntu-Regular',
     },
   });
 

@@ -1,7 +1,5 @@
 import { getDatabase } from '../database';
 
-const db = getDatabase();
-
 export interface TableSession {
   id: number;
   table_id: number;
@@ -14,6 +12,7 @@ export interface TableSession {
  * Start a new session for a table
  */
 export const startSession = async (tableId: number): Promise<number> => {
+  const db = await getDatabase();
   const startTime = new Date().toISOString();
 
   // Create session
@@ -37,6 +36,7 @@ export const startSession = async (tableId: number): Promise<number> => {
  * End the current session for a table
  */
 export const endSession = async (sessionId: number): Promise<void> => {
+  const db = await getDatabase();
   const endTime = new Date().toISOString();
 
   await db.execute(
@@ -69,6 +69,7 @@ export const endSession = async (sessionId: number): Promise<void> => {
 export const getActiveSessionId = async (
   tableId: number,
 ): Promise<number | null> => {
+  const db = await getDatabase();
   // Try getting from tables table first (faster)
   const tableResult = await db.execute(
     `SELECT active_session_id FROM tables WHERE id = ?`,

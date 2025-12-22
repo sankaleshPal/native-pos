@@ -11,7 +11,7 @@ import type {
 
 // Get all categories
 export const getAllCategories = async (): Promise<Category[]> => {
-  const db = getDatabase();
+  const db = await getDatabase();
   const result = await db.execute(
     'SELECT * FROM categories WHERE visibility = 1 ORDER BY sequence, name',
   );
@@ -20,7 +20,7 @@ export const getAllCategories = async (): Promise<Category[]> => {
 
 // Get all dishes
 export const getAllDishes = async (): Promise<Dish[]> => {
-  const db = getDatabase();
+  const db = await getDatabase();
   const result = await db.execute(
     'SELECT * FROM dishes WHERE visibility = 1 AND availability = 1',
   );
@@ -31,7 +31,7 @@ export const getAllDishes = async (): Promise<Dish[]> => {
 export const getDishesByCategory = async (
   categoryId: number,
 ): Promise<Dish[]> => {
-  const db = getDatabase();
+  const db = await getDatabase();
   const result = await db.execute(
     `SELECT d.* FROM dishes d
      INNER JOIN dish_categories dc ON d.id = dc.dish_id
@@ -45,7 +45,7 @@ export const getDishesByCategory = async (
 export const getDishWithDetails = async (
   dishId: number,
 ): Promise<DishWithDetails | null> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   // Get dish
   const dishResult = await db.execute('SELECT * FROM dishes WHERE id = ?', [
@@ -101,7 +101,7 @@ export const getDishWithDetails = async (
 
 // Search dishes
 export const searchDishes = async (query: string): Promise<Dish[]> => {
-  const db = getDatabase();
+  const db = await getDatabase();
   const result = await db.execute(
     `SELECT * FROM dishes 
      WHERE (name LIKE ? OR description LIKE ?) 

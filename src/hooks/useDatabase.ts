@@ -145,10 +145,11 @@ export const useSettleBill = () => {
       settledBy: string;
       tableId: number;
     }) => {
-      await settleBill(billId, paymentMode, settledBy);
+      const res = await settleBill(billId, paymentMode, settledBy);
+      return res;
     },
     onSuccess: (_, { tableId }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tablesWithZones }); // Table becomes empty
+      queryClient.invalidateQueries({ queryKey: queryKeys.tablesWithZones });
       queryClient.invalidateQueries({ queryKey: queryKeys.bill(tableId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.kots(tableId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.allBills });
@@ -175,6 +176,17 @@ export const useBill = (tableId: number) => {
     queryKey: queryKeys.bill(tableId),
     queryFn: () => getBillByTable(tableId),
     enabled: !!tableId,
+    staleTime: 0,
+  });
+};
+
+import { getKOTWithItems } from '../db/services/kotService';
+
+export const useKOT = (kotId: number | null) => {
+  return useQuery({
+    queryKey: ['kot', kotId],
+    queryFn: () => getKOTWithItems(kotId!),
+    enabled: !!kotId,
     staleTime: 0,
   });
 };

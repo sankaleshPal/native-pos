@@ -12,15 +12,18 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../store/authStore';
+import KeyboardButton from '../components/KeyboardButton';
+import { useThemeStore } from '../store/themeStore';
 
 export default function LoginScreen() {
+  const { theme } = useThemeStore();
   const [mobileNumber, setMobileNumber] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const login = useAuthStore((state) => state.login);
+  const login = useAuthStore(state => state.login);
 
   const handleLogin = async () => {
     // Reset error
@@ -42,14 +45,14 @@ export default function LoginScreen() {
     // Simulate network delay
     setTimeout(async () => {
       const success = await login(mobileNumber, password);
-      
+
       setLoading(false);
 
       if (!success) {
         setError('Invalid mobile number or password');
         Alert.alert(
           'Login Failed',
-          'Invalid credentials. Please try again.\n\nHint: Mobile: 8668229890, Password: 2701'
+          'Invalid credentials. Please try again.\n\nHint: Mobile: 8668229890, Password: 2701',
         );
       }
       // If success, the auth state will update and navigation will happen automatically
@@ -64,7 +67,7 @@ export default function LoginScreen() {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Ionicons name="lock-closed" size={64} color="#2196F3" />
+          <Ionicons name="lock-closed" size={64} />
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Login to continue</Text>
         </View>
@@ -79,7 +82,7 @@ export default function LoginScreen() {
               placeholder="Mobile Number"
               placeholderTextColor="#9E9E9E"
               value={mobileNumber}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setMobileNumber(text);
                 setError('');
               }}
@@ -97,7 +100,7 @@ export default function LoginScreen() {
               placeholder="Password"
               placeholderTextColor="#9E9E9E"
               value={password}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setPassword(text);
                 setError('');
               }}
@@ -122,24 +125,29 @@ export default function LoginScreen() {
           ) : null}
 
           {/* Login Button */}
-          <TouchableOpacity
-            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+          <KeyboardButton
+            label="Login"
             onPress={handleLogin}
+            loading={loading}
             disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <Text style={styles.loginButtonText}>Login</Text>
-                <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
-              </>
-            )}
-          </TouchableOpacity>
+            variant="primary"
+            icon={
+              <Ionicons
+                name="arrow-forward"
+                size={20}
+                color={theme.colors.textInverse}
+              />
+            }
+            style={styles.loginButtonContainer}
+          />
 
           {/* Hint */}
           <View style={styles.hintContainer}>
-            <Ionicons name="information-circle-outline" size={16} color="#757575" />
+            <Ionicons
+              name="information-circle-outline"
+              size={16}
+              color="#757575"
+            />
             <Text style={styles.hintText}>
               Demo credentials: 8668229890 / 2701
             </Text>
@@ -213,29 +221,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
   },
-  loginButton: {
-    flexDirection: 'row',
-    backgroundColor: '#2196F3',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    marginTop: 8,
-  },
-  loginButtonDisabled: {
-    backgroundColor: '#90CAF9',
-  },
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
+
   hintContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -249,5 +235,8 @@ const styles = StyleSheet.create({
     color: '#1976D2',
     fontSize: 12,
     marginLeft: 8,
+  },
+  loginButtonContainer: {
+    marginTop: 8,
   },
 });

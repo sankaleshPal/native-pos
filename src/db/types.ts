@@ -229,3 +229,12 @@ export interface TableWithKOTInfo extends Table {
   current_total: number;
   total_kots: number;
 }
+
+// Session types
+export interface TableSession {
+  id: number;
+  table_id: number;
+  start_time: string;
+  end_time: string | null;
+  status: 'active' | 'completed';
+}

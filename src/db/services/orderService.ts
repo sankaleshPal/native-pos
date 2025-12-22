@@ -14,7 +14,7 @@ export const createOrder = async (
   customerName?: string,
   customerPhone?: string,
 ): Promise<number> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   const result = await db.execute(
     `INSERT INTO orders (table_id, user_id, customer_name, customer_phone, status, subtotal, tax, total)
@@ -30,7 +30,7 @@ export const addOrderItemsFromCart = async (
   orderId: number,
   cartItems: CartItem[],
 ): Promise<void> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   for (const cartItem of cartItems) {
     const portionPrice = cartItem.portion?.price ?? cartItem.dish.price ?? 0;
@@ -76,7 +76,7 @@ export const addOrderItemsFromCart = async (
 
 // Update order totals
 export const updateOrderTotals = async (orderId: number): Promise<void> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   // Calculate subtotal from order items
   const result = await db.execute(
@@ -98,7 +98,7 @@ export const updateOrderTotals = async (orderId: number): Promise<void> => {
 export const getActiveOrderForTable = async (
   tableId: number,
 ): Promise<Order | null> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   const result = await db.execute(
     "SELECT * FROM orders WHERE table_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1",
@@ -114,7 +114,7 @@ export const getActiveOrderForTable = async (
 export const getOrderWithItems = async (
   orderId: number,
 ): Promise<OrderWithItems | null> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   // Get order
   const orderResult = await db.execute('SELECT * FROM orders WHERE id = ?', [
@@ -162,7 +162,7 @@ export const getOrderWithItems = async (
 
 // Complete an order
 export const completeOrder = async (orderId: number): Promise<void> => {
-  const db = getDatabase();
+  const db = await getDatabase();
   await db.execute("UPDATE orders SET status = 'completed' WHERE id = ?", [
     orderId,
   ]);
@@ -170,7 +170,7 @@ export const completeOrder = async (orderId: number): Promise<void> => {
 
 // Cancel an order
 export const cancelOrder = async (orderId: number): Promise<void> => {
-  const db = getDatabase();
+  const db = await getDatabase();
   await db.execute("UPDATE orders SET status = 'cancelled' WHERE id = ?", [
     orderId,
   ]);

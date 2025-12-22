@@ -13,6 +13,7 @@ import {
 import { usePOSStore } from '../store/posStore';
 import { useThemeStore } from '../store/themeStore';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import KeyboardButton from '../components/KeyboardButton';
 
 interface POSLoginScreenProps {
   onLoginSuccess: () => void;
@@ -23,7 +24,7 @@ const POSLoginScreen: React.FC<POSLoginScreenProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const login = usePOSStore(state => state.login);
-  const { theme, isDarkMode } = useThemeStore();
+  const theme = useThemeStore(s => s.theme);
 
   const handleLogin = async () => {
     if (!phone || !password) {
@@ -51,7 +52,7 @@ const POSLoginScreen: React.FC<POSLoginScreenProps> = ({ onLoginSuccess }) => {
     >
       <StatusBar
         backgroundColor={theme.colors.background}
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        barStyle={theme.isDark ? 'light-content' : 'dark-content'}
       />
 
       <View style={styles.content}>
@@ -109,18 +110,23 @@ const POSLoginScreen: React.FC<POSLoginScreenProps> = ({ onLoginSuccess }) => {
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+          <KeyboardButton
+            label={loading ? 'Authenticating...' : 'Sign In'}
             onPress={handleLogin}
+            loading={loading}
             disabled={loading}
-          >
-            <Text style={styles.loginButtonText}>
-              {loading ? 'Authenticating...' : 'Sign In'}
-            </Text>
-            {!loading && (
-              <Ionicons name="arrow-forward" size={20} color="#FFF" />
-            )}
-          </TouchableOpacity>
+            variant="primary"
+            width="100%"
+            icon={
+              !loading ? (
+                <Ionicons
+                  name="arrow-forward"
+                  size={20}
+                  color={theme.colors.textInverse}
+                />
+              ) : undefined
+            }
+          />
         </View>
 
         <View style={styles.footer}>
@@ -173,7 +179,7 @@ const getStyles = (theme: any) =>
       width: 80,
       height: 80,
       borderRadius: 24,
-      backgroundColor: theme.colors.surfaceHighlight,
+      backgroundColor: theme.colors.secondary,
       justifyContent: 'center',
       alignItems: 'center',
       marginBottom: 24,
@@ -181,7 +187,7 @@ const getStyles = (theme: any) =>
     title: {
       fontSize: 32,
       fontWeight: '700',
-      color: theme.colors.text,
+      color: theme.colors.textSecondary,
       marginBottom: 8,
       letterSpacing: -0.5,
     },
@@ -204,7 +210,7 @@ const getStyles = (theme: any) =>
     label: {
       fontSize: 14,
       fontWeight: '600',
-      color: theme.colors.text,
+      color: theme.colors.textSecondary,
       marginBottom: 8,
       marginLeft: 4,
     },
@@ -224,28 +230,10 @@ const getStyles = (theme: any) =>
     input: {
       flex: 1,
       fontSize: 16,
-      color: theme.colors.text,
+      color: theme.colors.primary,
       height: '100%',
     },
-    loginButton: {
-      backgroundColor: theme.colors.primary,
-      borderRadius: 12,
-      height: 56,
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: 12,
-      gap: 8,
-      ...theme.shadows.card,
-    },
-    loginButtonDisabled: {
-      opacity: 0.7,
-    },
-    loginButtonText: {
-      color: theme.colors.primaryForeground,
-      fontSize: 16,
-      fontWeight: '600',
-    },
+
     footer: {
       marginTop: 40,
       alignItems: 'center',
@@ -262,7 +250,7 @@ const getStyles = (theme: any) =>
       gap: 12,
     },
     tag: {
-      backgroundColor: theme.colors.surfaceHighlight,
+      backgroundColor: theme.colors.border,
       paddingVertical: 8,
       paddingHorizontal: 16,
       borderRadius: 100,

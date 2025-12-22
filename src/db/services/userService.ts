@@ -5,7 +5,7 @@ export const authenticateUser = async (
   phone: string,
   password: string,
 ): Promise<User | null> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   console.log('Authenticating user:', phone, password);
 
@@ -26,7 +26,7 @@ export const authenticateUser = async (
 };
 
 export const getUserById = async (id: number): Promise<User | null> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   const result = await db.execute('SELECT * FROM users WHERE id = ?', [id]);
 
@@ -38,7 +38,7 @@ export const getUserById = async (id: number): Promise<User | null> => {
 };
 
 export const getAllUsers = async (): Promise<User[]> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   const result = await db.execute('SELECT * FROM users');
 

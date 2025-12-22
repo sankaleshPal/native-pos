@@ -31,7 +31,7 @@ export const formatVariantDescription = (
  * Calculate total price for a cart item
  */
 export const calculateItemTotal = (item: CartItem): number => {
-  const portionPrice = item.portion?.price || 0;
+  const portionPrice = item.portion?.price || item.dish.price || 0;
   const extrasPrice = item.extras.reduce(
     (sum, extra) => sum + extra.price * extra.quantity,
     0,

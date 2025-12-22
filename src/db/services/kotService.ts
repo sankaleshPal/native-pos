@@ -2,8 +2,6 @@ import { getDatabase } from '../database';
 import type { KOT, KOTItem, KOTWithItems, CartItem } from '../types';
 import { getActiveSessionId, startSession } from './sessionService';
 
-const db = getDatabase();
-
 /**
  * Create a new KOT from cart items
  */
@@ -13,6 +11,7 @@ export const createKOT = async (
   punchedBy: string,
   cartItems: CartItem[],
 ): Promise<number> => {
+  const db = await getDatabase();
   console.log('createKOT called with:', {
     tableId,
     userId,
@@ -25,15 +24,26 @@ export const createKOT = async (
   }
 
   const punchedAt = new Date().toISOString();
+  console.log('Cart Items details:', JSON.stringify(cartItems, null, 2));
+
   const itemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cartItems.reduce((sum, item) => {
-    const portionPrice = item.portion?.price || 0;
+    // Debug individual item calculation
+    const portionPrice =
+      Number(item.portion?.price) || Number(item.dish.price) || 0;
     const extrasPrice =
       item.extras?.reduce(
-        (eSum, extra) => eSum + (extra.price || 0) * (extra.quantity || 0),
+        (eSum, extra) =>
+          eSum + (Number(extra.price) || 0) * (Number(extra.quantity) || 0),
         0,
       ) || 0;
-    return sum + (portionPrice + extrasPrice) * item.quantity;
+
+    const singleItemTotal = (portionPrice + extrasPrice) * item.quantity;
+    console.log(
+      `Item calculation: ${item.dish.name}, Price: ${portionPrice}, Extras: ${extrasPrice}, Qty: ${item.quantity}, ItemTotal: ${singleItemTotal}`,
+    );
+
+    return sum + singleItemTotal;
   }, 0);
 
   console.log('KOT calculations:', { itemsCount, subtotal });
@@ -56,10 +66,12 @@ export const createKOT = async (
 
   // Insert KOT items
   for (const item of cartItems) {
-    const portionPrice = item.portion?.price || 0;
+    const portionPrice =
+      Number(item.portion?.price) || Number(item.dish.price) || 0;
     const extrasPrice =
       item.extras?.reduce(
-        (sum, extra) => sum + (extra.price || 0) * (extra.quantity || 0),
+        (sum, extra) =>
+          sum + (Number(extra.price) || 0) * (Number(extra.quantity) || 0),
         0,
       ) || 0;
     const itemTotal = (portionPrice + extrasPrice) * item.quantity;
@@ -96,6 +108,7 @@ export const createKOT = async (
 export const getKOTsByTable = async (
   tableId: number,
 ): Promise<KOTWithItems[]> => {
+  const db = await getDatabase();
   console.log('getKOTsByTable called for table:', tableId);
 
   // Get active session
@@ -145,6 +158,7 @@ export const getKOTsByTable = async (
 export const getKOTWithItems = async (
   kotId: number,
 ): Promise<KOTWithItems | null> => {
+  const db = await getDatabase();
   const kotResult = await db.execute(`SELECT * FROM kots WHERE id = ?`, [
     kotId,
   ]);
@@ -175,11 +189,13 @@ export const deleteKOTItem = async (
   reason: string,
   password: string,
 ): Promise<boolean> => {
+  const db = await getDatabase();
   // Verify password (check against user's password)
   const userResult = await db.execute(
     `SELECT password FROM users WHERE name = ?`,
     [deletedBy],
   );
+  console.log('User result:', userResult);
 
   if (!userResult.rows?.length || userResult.rows[0].password !== password) {
     throw new Error('Invalid password');
@@ -221,6 +237,7 @@ export const deleteKOTItem = async (
  * Get deleted items for a KOT
  */
 export const getDeletedItems = async (kotId: number): Promise<KOTItem[]> => {
+  const db = await getDatabase();
   const result = await db.execute(
     `SELECT * FROM kot_items WHERE kot_id = ? AND is_deleted = 1 ORDER BY deleted_at DESC`,
     [kotId],
@@ -233,6 +250,7 @@ export const getDeletedItems = async (kotId: number): Promise<KOTItem[]> => {
  * Update table totals (current_total and total_kots)
  */
 export const updateTableTotals = async (tableId: number): Promise<void> => {
+  const db = await getDatabase();
   console.log('updateTableTotals called for table:', tableId);
 
   try {
@@ -296,6 +314,7 @@ export const updateTableTotals = async (tableId: number): Promise<void> => {
  * Mark table as active with timestamp
  */
 export const markTableActive = async (tableId: number): Promise<void> => {
+  const db = await getDatabase();
   const activeSince = new Date().toISOString();
 
   await db.execute(
@@ -310,6 +329,7 @@ export const markTableActive = async (tableId: number): Promise<void> => {
  * Mark table as inactive (empty)
  */
 export const markTableInactive = async (tableId: number): Promise<void> => {
+  const db = await getDatabase();
   await db.execute(
     `UPDATE tables 
      SET status = 'empty', active_since = NULL, current_total = 0, total_kots = 0
@@ -333,6 +353,7 @@ export interface PrintData {
 export const prepareKOTPrintData = async (
   kotId: number,
 ): Promise<PrintData | null> => {
+  const db = await getDatabase();
   const kotResult = await getKOTWithItems(kotId);
   const kot = kotResult as KOTWithItems;
   if (!kot) return null;
@@ -347,11 +368,11 @@ export const prepareKOTPrintData = async (
 
   return {
     kotId: kot.id,
-    tableName,
-    punchedBy: kot.punched_by,
-    punchedAt: kot.punched_at,
+    tableName: String(tableName),
+    punchedBy: String(kot.punched_by),
+    punchedAt: String(kot.punched_at),
     items: kot.items.filter(item => !item.is_deleted),
-    total: kot.subtotal,
+    total: Number(kot.subtotal),
   };
 };
 
@@ -359,6 +380,7 @@ export const prepareKOTPrintData = async (
  * Get all active KOTs across all tables
  */
 export const getAllActiveKOTs = async (): Promise<KOTWithItems[]> => {
+  const db = await getDatabase();
   const kotsResult = await db.execute(
     `SELECT * FROM kots WHERE status = 'active' ORDER BY punched_at DESC`,
   );

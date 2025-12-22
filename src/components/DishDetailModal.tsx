@@ -145,7 +145,6 @@ const DishDetailModal: React.FC<DishDetailModalProps> = ({
     }
 
     addToCart(dish, selectedPortion, extras, quantity);
-    Alert.alert('Success', 'Item added to cart!');
     onClose();
   };
 
@@ -157,7 +156,6 @@ const DishDetailModal: React.FC<DishDetailModalProps> = ({
 
     // Add the same variant with quantity 1
     addToCart(dish, lastVariant.portion, lastVariant.extras, 1);
-    Alert.alert('Success', 'Previous variant added to cart!');
     onClose();
   };
 
@@ -179,12 +177,7 @@ const DishDetailModal: React.FC<DishDetailModalProps> = ({
   const typeInfo = getDishTypeIcon(dish.dish_type);
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           {/* Header */}

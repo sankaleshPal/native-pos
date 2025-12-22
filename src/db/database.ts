@@ -2,10 +2,17 @@ import { open } from '@op-engineering/op-sqlite';
 
 let db: ReturnType<typeof open> | null = null;
 
-export const getDatabase = (): ReturnType<typeof open> => {
+let initPromise: Promise<void> | null = null;
+
+export const getDatabase = async (): Promise<ReturnType<typeof open>> => {
   if (!db) {
     db = open({ name: 'pos.db' });
-    initializeDatabase();
+    initPromise = initializeDatabase();
+  }
+
+  if (initPromise) {
+    await initPromise;
+    initPromise = null;
   }
   return db;
 };

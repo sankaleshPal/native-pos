@@ -51,7 +51,7 @@ export const useModalStore = create<ModalState>()(set => ({
   // KOT Options actions
   showKOTOptions: kotId =>
     set({ kotOptionsVisible: true, selectedKOTId: kotId }),
-  hideKOTOptions: () => set({ kotOptionsVisible: false, selectedKOTId: null }),
+  hideKOTOptions: () => set({ kotOptionsVisible: false }),
 
   // Delete Item actions
   showDeleteItem: () => set({ deleteItemVisible: true, deleteStep: 1 }),
@@ -72,6 +72,7 @@ export const useModalStore = create<ModalState>()(set => ({
       selectedItemIds: [],
       deletePassword: '',
       deleteReason: '',
+      selectedKOTId: null,
     }),
 
   // Payment Modal actions

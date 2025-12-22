@@ -5,7 +5,7 @@ import {
   TextInput,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   Alert,
   ActivityIndicator,
   Modal,
@@ -15,18 +15,17 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { usePOSStore } from '../store/posStore';
 import { useThemeStore } from '../store/themeStore';
-import { useTablesWithZones, useUpdateTableStatus } from '../hooks/useDatabase';
+import { useTablesWithZones } from '../hooks/useDatabase';
 import TableTimer from '../components/TableTimer';
 import type { Table, ZoneWithTables } from '../db/types';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import RefreshButton from '../components/RefreshButton';
-import LinearGradient from 'react-native-linear-gradient';
 
 const TablesScreen = () => {
   const navigation = useNavigation<any>();
   const { data: zonesWithTables, isLoading, refetch } = useTablesWithZones();
   const { logout, currentUser } = usePOSStore();
-  const { theme, isDarkMode } = useThemeStore();
+  const { theme } = useThemeStore();
 
   const styles = getStyles(theme);
 
@@ -46,11 +45,11 @@ const TablesScreen = () => {
 
   const handleTablePress = (table: Table) => {
     // If table is empty, navigate to menu
+    console.log(table);
     if (table.status === 'empty') {
       navigation.navigate('Menu', { table });
       return;
     }
-
     // If table is active, navigate to KOT screen
     navigation.navigate('KOT', { table });
   };
@@ -100,11 +99,12 @@ const TablesScreen = () => {
     const tableWithKOT = table as any; // Cast to access KOT fields
 
     return (
-      <TouchableOpacity
+      <Pressable
         key={table.id}
-        style={[
+        style={({ pressed }) => [
           styles.tableCard,
           isActive ? styles.tableCardActive : styles.tableCardEmpty,
+          pressed && { opacity: 0.8 },
         ]}
         onPress={() => handleTablePress(table)}
       >
@@ -118,7 +118,7 @@ const TablesScreen = () => {
             <Ionicons
               name={isActive ? 'people' : 'people-outline'}
               size={20}
-              color={isActive ? '#FFFFFF' : theme.colors.primary}
+              color={isActive ? theme.colors.textInverse : theme.colors.primary}
             />
           </View>
 
@@ -129,7 +129,10 @@ const TablesScreen = () => {
             ]}
           >
             <Text
-              style={[styles.statusText, isActive ? { color: '#FFF' } : {}]}
+              style={[
+                styles.statusText,
+                isActive ? { color: theme.colors.textInverse } : {},
+              ]}
             >
               {isActive ? 'Active' : 'Empty'}
             </Text>
@@ -140,7 +143,14 @@ const TablesScreen = () => {
           {table.table_name}
         </Text>
         {isActive && (
-          <Text style={styles.tableCodeActive}>{table.table_code}</Text>
+          <Text
+            style={[
+              styles.tableCodeActive,
+              { color: theme.colors.textSecondary },
+            ]}
+          >
+            {table.table_code}
+          </Text>
         )}
 
         {/* Active Table Info */}
@@ -201,15 +211,18 @@ const TablesScreen = () => {
 
           {/* Print Button for Active Tables */}
           {isActive && (
-            <TouchableOpacity
-              style={styles.printButton}
+            <Pressable
+              style={({ pressed }) => [
+                styles.printButton,
+                pressed && { opacity: 0.7 },
+              ]}
               onPress={e => handlePrint(table, e)}
             >
               <Ionicons name="print-outline" size={18} color="#FFFFFF" />
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
-      </TouchableOpacity>
+      </Pressable>
     );
   };
 
@@ -252,16 +265,19 @@ const TablesScreen = () => {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
-            <TouchableOpacity
-              style={styles.menuButton}
+            <Pressable
+              style={({ pressed }) => [
+                styles.menuButton,
+                pressed && { opacity: 0.7 },
+              ]}
               onPress={() => navigation.toggleDrawer()}
             >
               <Ionicons
                 name="menu"
                 size={28}
-                color={theme.colors.primaryForeground}
+                color={theme.colors.textInverse}
               />
-            </TouchableOpacity>
+            </Pressable>
 
             <View>
               <Text style={styles.businessName}>My Restaurant</Text>
@@ -279,8 +295,11 @@ const TablesScreen = () => {
                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
               }}
             />
-            <TouchableOpacity
-              style={styles.profileButton}
+            <Pressable
+              style={({ pressed }) => [
+                styles.profileButton,
+                pressed && { opacity: 0.7 },
+              ]}
               onPress={() => setShowProfileMenu(!showProfileMenu)}
             >
               <View style={styles.profileAvatar}>
@@ -288,7 +307,7 @@ const TablesScreen = () => {
                   {currentUser?.name?.charAt(0) || 'U'}
                 </Text>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </View>
 
@@ -299,8 +318,11 @@ const TablesScreen = () => {
               <Text style={styles.profileMenuName}>{currentUser?.name}</Text>
               <Text style={styles.profileMenuPhone}>{currentUser?.phone}</Text>
             </View>
-            <TouchableOpacity
-              style={styles.profileMenuItem}
+            <Pressable
+              style={({ pressed }) => [
+                styles.profileMenuItem,
+                pressed && { backgroundColor: theme.colors.border },
+              ]}
               onPress={handleLogout}
             >
               <Ionicons
@@ -309,7 +331,7 @@ const TablesScreen = () => {
                 color={theme.colors.error}
               />
               <Text style={styles.profileMenuItemText}>Logout</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         )}
 
@@ -329,13 +351,13 @@ const TablesScreen = () => {
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Pressable onPress={() => setSearchQuery('')}>
               <Ionicons
                 name="close-circle"
                 size={20}
                 color={theme.colors.textSecondary}
               />
-            </TouchableOpacity>
+            </Pressable>
           )}
         </View>
       </View>
@@ -362,18 +384,17 @@ const TablesScreen = () => {
       />
 
       {/* Start Table Button */}
-      <TouchableOpacity
-        style={styles.fabContainer}
+      <Pressable
+        style={({ pressed }) => [
+          styles.fabContainer,
+          pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] },
+        ]}
         onPress={() => setShowStartTableModal(true)}
       >
         <View style={styles.fab}>
-          <Ionicons
-            name="add"
-            size={32}
-            color={theme.colors.primaryForeground}
-          />
+          <Ionicons name="add" size={32} color={theme.colors.textInverse} />
         </View>
-      </TouchableOpacity>
+      </Pressable>
 
       {/* Start Table Modal */}
       <Modal
@@ -382,21 +403,23 @@ const TablesScreen = () => {
         transparent={true}
         onRequestClose={() => setShowStartTableModal(false)}
       >
-        <TouchableOpacity
+        <Pressable
           style={styles.modalOverlay}
-          activeOpacity={1}
           onPress={() => setShowStartTableModal(false)}
         >
-          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+          <Pressable
+            style={styles.modalContent}
+            onPress={e => e.stopPropagation()}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Empty Table</Text>
-              <TouchableOpacity onPress={() => setShowStartTableModal(false)}>
+              <Pressable onPress={() => setShowStartTableModal(false)}>
                 <Ionicons
                   name="close"
                   size={24}
                   color={theme.colors.textSecondary}
                 />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             <View style={styles.modalSearchContainer}>
@@ -431,9 +454,12 @@ const TablesScreen = () => {
                 </View>
               ) : (
                 emptyTables.map((table: any) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={table.id}
-                    style={styles.modalTableItem}
+                    style={({ pressed }) => [
+                      styles.modalTableItem,
+                      pressed && { backgroundColor: theme.colors.border },
+                    ]}
                     onPress={() => handleStartTable(table)}
                   >
                     <View style={styles.modalTableInfo}>
@@ -454,12 +480,12 @@ const TablesScreen = () => {
                         {table.capacity}
                       </Text>
                     </View>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))
               )}
             </ScrollView>
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -489,7 +515,7 @@ const getStyles = (theme: any) =>
       paddingHorizontal: 20,
       borderBottomLeftRadius: 32,
       borderBottomRightRadius: 32,
-      ...theme.shadows.card,
+      ...theme.shadows.level1,
     },
     headerTop: {
       flexDirection: 'row',
@@ -507,16 +533,16 @@ const getStyles = (theme: any) =>
     businessName: {
       fontSize: 20,
       fontWeight: '700',
-      color: theme.colors.primaryForeground,
+      color: theme.colors.textPrimary,
     },
     businessSubtitle: {
       fontSize: 14,
-      color: 'rgba(255, 255, 255, 0.8)',
+      color: theme.colors.textPrimary,
     },
     profileButton: {
       padding: 2,
       borderWidth: 2,
-      borderColor: 'rgba(255,255,255,0.4)',
+      borderColor: theme.colors.textPrimary,
       borderRadius: 24,
     },
     profileAvatar: {
@@ -539,7 +565,7 @@ const getStyles = (theme: any) =>
       backgroundColor: theme.colors.surface,
       borderRadius: 16,
       padding: 8,
-      ...theme.shadows.card,
+      ...theme.shadows.level1,
       minWidth: 200,
       zIndex: 1000,
       borderWidth: 1,
@@ -609,7 +635,7 @@ const getStyles = (theme: any) =>
       flex: 1,
     },
     tableCount: {
-      backgroundColor: theme.colors.surfaceHighlight,
+      backgroundColor: theme.colors.card,
       borderRadius: 12,
       paddingHorizontal: 10,
       paddingVertical: 4,
@@ -651,7 +677,7 @@ const getStyles = (theme: any) =>
       width: 32,
       height: 32,
       borderRadius: 8,
-      backgroundColor: theme.colors.surfaceHighlight,
+      backgroundColor: theme.colors.card,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -661,7 +687,7 @@ const getStyles = (theme: any) =>
       borderRadius: 8,
     },
     statusBadgeEmpty: {
-      backgroundColor: theme.colors.surfaceHighlight,
+      backgroundColor: theme.colors.border,
     },
     statusBadgeActive: {
       backgroundColor: 'rgba(255, 255, 255, 0.2)',
@@ -675,15 +701,15 @@ const getStyles = (theme: any) =>
     tableName: {
       fontSize: 18,
       fontWeight: '700',
-      color: theme.colors.text,
+      color: theme.colors.primary,
       marginBottom: 2,
     },
     tableNameActive: {
-      color: '#FFFFFF',
+      color: theme.colors.background,
     },
     tableCode: {
       fontSize: 13,
-      color: theme.colors.textSecondary,
+      color: theme.colors.background,
       marginBottom: 8,
     },
     tableCodeActive: {
@@ -789,7 +815,7 @@ const getStyles = (theme: any) =>
     modalTitle: {
       fontSize: 20,
       fontWeight: '700',
-      color: theme.colors.text,
+      color: theme.colors.primary,
     },
     modalSearchContainer: {
       flexDirection: 'row',
@@ -829,7 +855,7 @@ const getStyles = (theme: any) =>
     modalTableName: {
       fontSize: 16,
       fontWeight: '600',
-      color: theme.colors.text,
+      color: theme.colors.primary,
       marginBottom: 4,
     },
     modalTableZone: {

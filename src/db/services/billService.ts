@@ -4,12 +4,11 @@ import { getKOTsByTable } from './kotService';
 import { markTableInactive } from './kotService';
 import { endSession, getActiveSessionId } from './sessionService';
 
-const db = getDatabase();
-
 /**
  * Create a bill for a table with all its KOTs (Active Session Only)
  */
 export const createBill = async (tableId: number): Promise<number> => {
+  const db = await getDatabase();
   // Get active session
   const sessionId = await getActiveSessionId(tableId);
   if (!sessionId) {
@@ -85,6 +84,7 @@ export const createBill = async (tableId: number): Promise<number> => {
 export const getBillByTable = async (
   tableId: number,
 ): Promise<BillWithKOTs | null> => {
+  const db = await getDatabase();
   const sessionId = await getActiveSessionId(tableId);
 
   if (!sessionId) return null;
@@ -94,39 +94,57 @@ export const getBillByTable = async (
     [tableId, sessionId],
   );
 
-  if (!billResult.rows?.length) {
-    return null;
-  }
+  if (billResult.rows?.length) {
+    const bill = billResult.rows[0] as unknown as Bill;
 
-  // ... (rest of getBill logic is same, assuming billId is unique)
-  const bill = billResult.rows[0] as unknown as Bill;
-
-  // Get KOTs linked to this bill
-  const kotsResult = await db.execute(
-    `SELECT k.* FROM kots k
-     JOIN bill_kots bk ON k.id = bk.kot_id
-     WHERE bk.bill_id = ?
-     ORDER BY k.punched_at ASC`,
-    [bill.id],
-  );
-
-  const kots = [];
-  for (const kotRow of (kotsResult.rows || []) as unknown as KOT[]) {
-    const itemsResult = await db.execute(
-      `SELECT * FROM kot_items WHERE kot_id = ? ORDER BY created_at ASC`,
-      [kotRow.id],
+    // Get KOTs linked to this bill
+    const kotsResult = await db.execute(
+      `SELECT k.* FROM kots k
+       JOIN bill_kots bk ON k.id = bk.kot_id
+       WHERE bk.bill_id = ?
+       ORDER BY k.punched_at ASC`,
+      [bill.id],
     );
 
-    kots.push({
-      ...kotRow,
-      items: (itemsResult.rows || []) as unknown as KOTItem[],
-    });
+    const kots = [];
+    for (const kotRow of (kotsResult.rows || []) as unknown as KOT[]) {
+      const itemsResult = await db.execute(
+        `SELECT * FROM kot_items WHERE kot_id = ? ORDER BY created_at ASC`,
+        [kotRow.id],
+      );
+
+      kots.push({
+        ...kotRow,
+        items: (itemsResult.rows || []) as unknown as KOTItem[],
+      });
+    }
+
+    return {
+      ...bill,
+      kots,
+    };
   }
 
-  return {
-    ...bill,
-    kots,
-  };
+  // === AUTO-GENERATE LOGIC START ===
+  // If no bill found, check if there are active KOTs to bill
+  const kotsResult = await db.execute(
+    `SELECT * FROM kots WHERE session_id = ? AND status = 'active'`,
+    [sessionId],
+  );
+
+  const activeKOTs = (kotsResult.rows || []) as unknown as KOT[];
+
+  if (activeKOTs.length > 0) {
+    // Auto-create bill
+    console.log(`Auto-generating bill for table ${tableId}`);
+    await createBill(tableId);
+
+    // Recursive fetch of the newly created bill
+    return getBillByTable(tableId);
+  }
+  // === AUTO-GENERATE LOGIC END ===
+
+  return null;
 };
 
 /**
@@ -135,6 +153,7 @@ export const getBillByTable = async (
 export const getBillById = async (
   billId: number,
 ): Promise<BillWithKOTs | null> => {
+  const db = await getDatabase();
   const billResult = await db.execute(`SELECT * FROM bills WHERE id = ?`, [
     billId,
   ]);
@@ -181,6 +200,7 @@ export const settleBill = async (
   paymentMode: PaymentMode,
   settledBy: string,
 ): Promise<boolean> => {
+  const db = await getDatabase();
   const settledAt = new Date().toISOString();
 
   await db.execute(
@@ -225,6 +245,7 @@ export const settleBill = async (
  * Get all bills (for reporting)
  */
 export const getAllBills = async (): Promise<Bill[]> => {
+  const db = await getDatabase();
   const result = await db.execute(
     `SELECT * FROM bills ORDER BY created_at DESC`,
   );
@@ -239,6 +260,7 @@ export const getBillsByDateRange = async (
   startDate: string,
   endDate: string,
 ): Promise<Bill[]> => {
+  const db = await getDatabase();
   const result = await db.execute(
     `SELECT * FROM bills 
      WHERE created_at BETWEEN ? AND ?

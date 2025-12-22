@@ -2,7 +2,7 @@ import { getDatabase } from '../database';
 import type { Zone, Table, ZoneWithTables } from '../types';
 
 export const getAllZones = async (): Promise<Zone[]> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   const result = await db.execute('SELECT * FROM zones ORDER BY id');
 
@@ -12,7 +12,7 @@ export const getAllZones = async (): Promise<Zone[]> => {
 export const getZonesByBusinessId = async (
   businessId: number,
 ): Promise<Zone[]> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   const result = await db.execute(
     'SELECT * FROM zones WHERE business_id = ? ORDER BY id',
@@ -23,7 +23,7 @@ export const getZonesByBusinessId = async (
 };
 
 export const getTablesByZoneId = async (zoneId: number): Promise<Table[]> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   const result = await db.execute(
     'SELECT * FROM tables WHERE zone_id = ? ORDER BY id',
@@ -50,7 +50,7 @@ export const updateTableStatus = async (
   tableId: number,
   status: 'empty' | 'active',
 ): Promise<void> => {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   await db.execute('UPDATE tables SET status = ? WHERE id = ?', [
     status,

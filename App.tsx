@@ -5,7 +5,12 @@ import { QueryProvider } from './src/providers/QueryProvider';
 import { getDatabase } from './src/db/database';
 import { seedLargeMenuData } from './src/db/seedLargeMenu';
 
+import { StatusBar } from 'react-native';
+import { useThemeStore } from './src/store/themeStore';
+
 export default function App(): React.JSX.Element {
+  const { theme } = useThemeStore();
+
   React.useEffect(() => {
     // Initialize database and seed data
     const initDB = async () => {
@@ -17,7 +22,14 @@ export default function App(): React.JSX.Element {
 
   return (
     <QueryProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <GestureHandlerRootView
+        style={{ flex: 1, backgroundColor: theme.colors.background }}
+      >
+        <StatusBar
+          barStyle={theme.isDark ? 'light-content' : 'dark-content'}
+          backgroundColor={theme.colors.background}
+          translucent={false}
+        />
         <RootNavigator />
       </GestureHandlerRootView>
     </QueryProvider>

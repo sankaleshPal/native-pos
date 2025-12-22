@@ -21,7 +21,7 @@ const HistoryScreen = () => {
   const [bills, setBills] = useState<Bill[]>([]);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const { theme, isDarkMode } = useThemeStore();
+  const { theme } = useThemeStore();
 
   const styles = getStyles(theme);
 
@@ -130,11 +130,7 @@ const HistoryScreen = () => {
             onPress={() => navigation.toggleDrawer()}
             style={styles.menuButton}
           >
-            <Ionicons
-              name="menu"
-              size={28}
-              color={theme.colors.primaryForeground}
-            />
+            <Ionicons name="menu" size={28} color={theme.colors.textInverse} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Sales History</Text>
         </View>
@@ -200,7 +196,7 @@ const getStyles = (theme: any) =>
     headerTitle: {
       fontSize: 20,
       fontWeight: '700',
-      color: theme.colors.primaryForeground,
+      color: theme.colors.textInverse,
     },
     subtitle: {
       marginTop: 5,
@@ -243,7 +239,7 @@ const getStyles = (theme: any) =>
       width: 32,
       height: 32,
       borderRadius: 8,
-      backgroundColor: theme.colors.surfaceHighlight,
+      backgroundColor: theme.colors.card,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -320,7 +316,7 @@ const getStyles = (theme: any) =>
     headerSubtitle: {
       fontSize: 24,
       fontWeight: '700',
-      color: theme.colors.primaryForeground,
+      color: theme.colors.textInverse,
     },
   });
 

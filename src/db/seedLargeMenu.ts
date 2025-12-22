@@ -5,11 +5,11 @@ export const seedLargeMenuData = async () => {
   const db = await getDBConnection();
 
   // Check if data already exists
-  const existingCategories = await db.getAllAsync<Category>(
+  const existingCategories = await db.execute(
     'SELECT * FROM categories LIMIT 1',
   );
 
-  if (existingCategories.length > 5) {
+  if (existingCategories.rows?.length > 5) {
     console.log('Database already seeded with large dataset');
     return;
   }
@@ -1024,25 +1024,55 @@ export const seedLargeMenuData = async () => {
 
   try {
     // Insert categories and dishes
+
     for (const category of categories) {
-      const categoryResult = await db.runAsync(
-        'INSERT INTO categories (name, display_order) VALUES (?, ?)',
+      // Try to insert, ignore if exists
+      await db.execute(
+        'INSERT OR IGNORE INTO categories (name, sequence) VALUES (?, ?)',
         [category.name, category.display_order],
       );
 
-      const categoryId = categoryResult.lastInsertRowId;
+      // Get the category ID (whether inserted or existing)
+      const categoryRes = await db.execute(
+        'SELECT id FROM categories WHERE name = ?',
+        [category.name],
+      );
+
+      const categoryId = categoryRes.rows?.[0]?.id as number;
+
+      if (!categoryId) {
+        console.error(`Could not find id for category ${category.name}`);
+        continue;
+      }
+
       const dishList =
         dishTemplates[category.name as keyof typeof dishTemplates] || [];
 
       for (let i = 0; i < dishList.length; i++) {
         const dish = dishList[i];
-        await db.runAsync(
-          `INSERT INTO dishes (name, category_id, price, dish_type, description, display_order, is_available) 
-           VALUES (?, ?, ?, ?, ?, ?, 1)`,
-          [dish.name, categoryId, dish.price, dish.type, dish.desc, i + 1],
-        );
-      }
 
+        // Insert dish (ignore if exists)
+        await db.execute(
+          `INSERT OR IGNORE INTO dishes (name, description, price, dish_type, availability) 
+           VALUES (?, ?, ?, ?, 1)`,
+          [dish.name, dish.desc, dish.price, dish.type],
+        );
+
+        // Get dish ID
+        const dishRes = await db.execute(
+          'SELECT id FROM dishes WHERE name = ?',
+          [dish.name],
+        );
+        const dishId = dishRes.rows?.[0]?.id as number;
+
+        // Link to category if not already linked
+        if (categoryId && dishId) {
+          await db.execute(
+            `INSERT OR IGNORE INTO dish_categories (dish_id, category_id) VALUES (?, ?)`,
+            [dishId, categoryId],
+          );
+        }
+      }
       console.log(
         `✓ Seeded category: ${category.name} with ${dishList.length} dishes`,
       );

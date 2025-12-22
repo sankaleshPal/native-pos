@@ -51,28 +51,28 @@ const TableSessionModal: React.FC<TableSessionModalProps> = ({
         return;
       }
 
-      const db = getDatabase();
+      const db = await getDatabase();
 
       // Fetch Session
       const sessionRes = await db.execute(
         'SELECT * FROM table_sessions WHERE id = ?',
         [sessionId],
       );
-      const session = sessionRes.rows?.item(0) as unknown as TableSession;
+      const session = sessionRes.rows?.[0] as unknown as TableSession;
 
       // Fetch KOTs
       const kotsRes = await db.execute(
         'SELECT * FROM kots WHERE session_id = ? ORDER BY punched_at ASC',
         [sessionId],
       );
-      const kots = (kotsRes.rows?._array || []) as unknown as KOT[];
+      const kots = (kotsRes.rows || []) as unknown as KOT[];
 
       // Fetch Bill
       const billRes = await db.execute(
         'SELECT * FROM bills WHERE session_id = ?',
         [sessionId],
       );
-      const bill = (billRes.rows?._array?.[0] as unknown as Bill) || null;
+      const bill = (billRes.rows?.[0] as unknown as Bill) || null;
 
       setDetails({ session, kots, bill });
     } catch (error) {

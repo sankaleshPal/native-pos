@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,68 +10,38 @@ import {
   Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { create } from 'zustand';
 import { useModalStore } from '../store/modalStore';
-import { getKOTWithItems, deleteKOTItem } from '../db/services/kotService';
+import { useKOT, useDeleteKOTItem } from '../hooks/useDatabase';
 import { usePOSStore } from '../store/posStore';
-import type { KOTItem } from '../db/types';
-
-interface DeleteState {
-  items: KOTItem[];
-  loading: boolean;
-  setItems: (items: KOTItem[]) => void;
-  setLoading: (loading: boolean) => void;
-}
-
-const useDeleteStore = create<DeleteState>()(set => ({
-  items: [],
-  loading: false,
-  setItems: items => set({ items }),
-  setLoading: loading => set({ loading }),
-}));
 
 const DeleteItemModal: React.FC = () => {
-  const {
-    deleteItemVisible,
-    deleteStep,
-    selectedItemIds,
-    deletePassword,
-    deleteReason,
-    selectedKOTId,
-    setDeleteStep,
-    toggleItemSelection,
-    setDeletePassword,
-    setDeleteReason,
-    resetDeleteModal,
-  } = useModalStore();
+  const deleteItemVisible = useModalStore(state => state.deleteItemVisible);
+  const deleteStep = useModalStore(state => state.deleteStep);
+  const selectedItemIds = useModalStore(state => state.selectedItemIds);
+  const deletePassword = useModalStore(state => state.deletePassword);
+  const deleteReason = useModalStore(state => state.deleteReason);
+  const selectedKOTId = useModalStore(state => state.selectedKOTId);
+  const setDeleteStep = useModalStore(state => state.setDeleteStep);
+  const toggleItemSelection = useModalStore(state => state.toggleItemSelection);
+  const setDeletePassword = useModalStore(state => state.setDeletePassword);
+  const setDeleteReason = useModalStore(state => state.setDeleteReason);
+  const resetDeleteModal = useModalStore(state => state.resetDeleteModal);
 
-  const { items, loading, setItems, setLoading } = useDeleteStore();
   const { currentUser } = usePOSStore();
 
-  useEffect(() => {
-    if (deleteItemVisible && selectedKOTId && deleteStep === 1) {
-      loadKOTItems();
-    }
-  }, [deleteItemVisible, selectedKOTId, deleteStep]);
+  const { data: kot, isLoading: itemsLoading } = useKOT(selectedKOTId);
+  const deleteKOTItemMutation = useDeleteKOTItem();
 
-  const loadKOTItems = async () => {
-    if (!selectedKOTId) return;
+  const items = kot?.items.filter(item => !item.is_deleted) || [];
+  const loading = itemsLoading || deleteKOTItemMutation.isPending;
 
-    setLoading(true);
-    try {
-      const kot = await getKOTWithItems(selectedKOTId);
-      if (kot) {
-        // Only show non-deleted items
-        const activeItems = kot.items.filter(item => !item.is_deleted);
-        setItems(activeItems);
-      }
-    } catch (error) {
-      console.error('Error loading KOT items:', error);
-      Alert.alert('Error', 'Failed to load items');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Debug logs
+  console.log('DeleteItemModal render:', {
+    visible: deleteItemVisible,
+    kotId: selectedKOTId,
+    itemsCount: items.length,
+    loading,
+  });
 
   const handleNext = () => {
     if (deleteStep === 1) {
@@ -95,16 +65,16 @@ const DeleteItemModal: React.FC = () => {
       return;
     }
 
-    setLoading(true);
     try {
       // Delete each selected item
       for (const itemId of selectedItemIds) {
-        await deleteKOTItem(
+        await deleteKOTItemMutation.mutateAsync({
           itemId,
-          currentUser?.name || 'Unknown',
-          deleteReason,
-          deletePassword,
-        );
+          deletedBy: currentUser?.name || 'Unknown',
+          reason: deleteReason,
+          password: deletePassword,
+          tableId: kot?.table_id || 0,
+        });
       }
 
       Alert.alert('Success', 'Items deleted successfully');
@@ -112,8 +82,6 @@ const DeleteItemModal: React.FC = () => {
     } catch (error: any) {
       console.error('Error deleting items:', error);
       Alert.alert('Error', error.message || 'Failed to delete items');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -135,7 +103,17 @@ const DeleteItemModal: React.FC = () => {
             )}
           </View>
           <View style={styles.itemInfo}>
-            <Text style={styles.itemName}>{item.dish_name}</Text>
+            <Text
+              style={[
+                styles.itemName,
+                selectedItemIds.includes(item.id) && {
+                  textDecorationLine: 'line-through',
+                  color: '#EF4444',
+                },
+              ]}
+            >
+              {item.dish_name}
+            </Text>
             {item.portion_name && (
               <Text style={styles.itemDetail}>
                 Portion: {item.portion_name}
