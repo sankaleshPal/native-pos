@@ -63,6 +63,20 @@ export default function CustomDrawerContent(
         >
           <DrawerItemList {...props} />
 
+          {/* Create Notification Item */}
+          <TouchableOpacity
+            style={styles.deviceSettingsItem}
+            onPress={() => navigation.navigate('CreateNotification')}
+          >
+            <Ionicons
+              name="megaphone-outline"
+              size={24}
+              color="#666"
+              style={{ marginRight: 32 }}
+            />
+            <Text style={styles.deviceSettingsText}>Create Notification</Text>
+          </TouchableOpacity>
+
           {/* Device Settings Item */}
           <TouchableOpacity
             style={styles.deviceSettingsItem}

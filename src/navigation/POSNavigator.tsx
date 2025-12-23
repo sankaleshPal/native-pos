@@ -12,6 +12,8 @@ import GlobalOrderAlert from '../components/GlobalOrderAlert';
 import { useDummyOrderGenerator } from '../hooks/useDummyOrderGenerator';
 import { View } from 'react-native';
 
+import CreateNotificationScreen from '../screens/CreateNotificationScreen';
+
 export type POSStackParamList = {
   POSLogin: undefined;
   Welcome: undefined;
@@ -21,6 +23,7 @@ export type POSStackParamList = {
   KOT: { table: any };
   Bill: { table: any };
   Orders: undefined;
+  CreateNotification: undefined;
 };
 
 const Stack = createStackNavigator<POSStackParamList>();
@@ -49,6 +52,10 @@ const POSNavigator = () => {
         <Stack.Screen name="KOT" component={KOTScreen} />
         <Stack.Screen name="Bill" component={BillScreen} />
         <Stack.Screen name="Orders" component={OrdersScreen} />
+        <Stack.Screen
+          name="CreateNotification"
+          component={CreateNotificationScreen}
+        />
       </Stack.Navigator>
       <GlobalOrderAlert />
     </View>

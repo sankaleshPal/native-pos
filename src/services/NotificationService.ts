@@ -126,6 +126,14 @@ class NotificationService {
       },
     });
   }
+  async sendTestNotification(title: string, body: string) {
+    // Simulate Backend API Call
+    console.log(`[MOCK API] Sending notification: ${title} - ${body}`);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // For demo purposes, we can trigger a local notification to simulate receipt
+    await this.displayLocalNotification(title, body);
+  }
 }
 
 export const notificationService = new NotificationService();
