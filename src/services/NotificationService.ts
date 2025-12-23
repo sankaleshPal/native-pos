@@ -1,6 +1,8 @@
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import messaging from '@react-native-firebase/messaging';
 import { useSettingsStore } from '../store/settingsStore';
+import { deviceService } from './DeviceService';
+import { useNotificationStore } from '../store/notificationStore';
 import { Platform } from 'react-native';
 
 class NotificationService {
@@ -8,6 +10,7 @@ class NotificationService {
     await this.requestUserPermission();
     await this.createChannel();
     this.setupForegroundListener();
+    this.setupTokenRefreshListener();
     await this.getFCMToken();
   }
 
@@ -27,7 +30,7 @@ class NotificationService {
       const fcmToken = await messaging().getToken();
       if (fcmToken) {
         console.log('FCM Token:', fcmToken);
-        // You would normally send this token to your backend
+        await deviceService.registerDevice(fcmToken);
       } else {
         console.log('Failed to get FCM token');
       }
@@ -36,12 +39,19 @@ class NotificationService {
     }
   }
 
+  setupTokenRefreshListener() {
+    return messaging().onTokenRefresh(async token => {
+      console.log('FCM Token Refreshed:', token);
+      await deviceService.registerDevice(token);
+    });
+  }
+
   async createChannel() {
     await notifee.createChannel({
-      id: 'default',
-      name: 'Default Channel',
+      id: 'orders_channel',
+      name: 'Orders Channel',
       importance: AndroidImportance.HIGH,
-      sound: 'default',
+      sound: 'order', // Matches android/app/src/main/res/raw/order.mp3
     });
   }
 
@@ -55,13 +65,25 @@ class NotificationService {
 
       console.log('A new FCM message arrived!', remoteMessage);
 
+      // Update Global Store
+      const { showOrderAlert } = useNotificationStore.getState();
+      showOrderAlert({
+        id: remoteMessage.messageId || Date.now().toString(),
+        title: remoteMessage.notification?.title || 'New Order',
+        body: remoteMessage.notification?.body || 'You have a new order!',
+        receivedAt: Date.now(),
+        tableName: remoteMessage.data?.tableName as string,
+        orderId: remoteMessage.data?.orderId as string,
+      });
+
       // Display a notification
       await notifee.displayNotification({
         title: remoteMessage.notification?.title || 'New Order',
         body: remoteMessage.notification?.body || 'You have a new order!',
         android: {
-          channelId: 'default',
+          channelId: 'orders_channel', // Updated channel
           importance: AndroidImportance.HIGH,
+          sound: 'order', // Custom sound
           pressAction: {
             id: 'default',
           },
@@ -78,12 +100,25 @@ class NotificationService {
       return;
     }
 
+    // Update Global Store for local simulation too
+    const { showOrderAlert } = useNotificationStore.getState();
+    showOrderAlert({
+      id: Date.now().toString(),
+      title: title,
+      body: body,
+      receivedAt: Date.now(),
+      // Mock data for local simulation
+      tableName: 'Table 5',
+      orderId: 'ORD-TEST',
+    });
+
     await notifee.displayNotification({
       title: title,
       body: body,
       android: {
-        channelId: 'default',
+        channelId: 'orders_channel',
         importance: AndroidImportance.HIGH,
+        sound: 'order',
         pressAction: {
           id: 'default',
         },
@@ -97,8 +132,5 @@ export const notificationService = new NotificationService();
 
 // Background handler must be outside the class or static
 export const backgroundMessageHandler = async (remoteMessage: any) => {
-  // We can also check store here, but store might not be ready in headless task.
-  // Usually better to let background notification happen or check persistent storage manually.
-  // For now, we trust the system handling or native filtering if needed.
   console.log('Message handled in the background!', remoteMessage);
 };

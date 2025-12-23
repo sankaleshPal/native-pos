@@ -17,11 +17,15 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
 
+import DeviceInfoModal from './DeviceInfoModal';
+
 export default function CustomDrawerContent(
   props: DrawerContentComponentProps,
 ) {
   const logout = useAuthStore(state => state.logout);
   const { notificationsPaused, toggleNotifications } = useSettingsStore();
+
+  const [deviceModalVisible, setDeviceModalVisible] = React.useState(false);
 
   // @ts-ignore - navigation is available in props
   const navigation = props.navigation;
@@ -51,33 +55,54 @@ export default function CustomDrawerContent(
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <DrawerContentScrollView
-        {...props}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <DrawerItemList {...props} />
-      </DrawerContentScrollView>
+    <>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <DrawerContentScrollView
+          {...props}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <DrawerItemList {...props} />
 
-      <View style={styles.preferencesContainer}>
-        <View style={styles.preferenceRow}>
-          <Text style={styles.preferenceText}>Pause Notifications</Text>
-          <Switch
-            value={notificationsPaused}
-            onValueChange={toggleNotifications}
-            trackColor={{ false: '#767577', true: '#81b0ff' }}
-            thumbColor={notificationsPaused ? '#f5dd4b' : '#f4f3f4'}
-          />
+          {/* Device Settings Item */}
+          <TouchableOpacity
+            style={styles.deviceSettingsItem}
+            onPress={() => setDeviceModalVisible(true)}
+          >
+            <Ionicons
+              name="settings-outline"
+              size={24}
+              color="#666"
+              style={{ marginRight: 32 }}
+            />
+            <Text style={styles.deviceSettingsText}>Device Settings</Text>
+          </TouchableOpacity>
+        </DrawerContentScrollView>
+
+        <View style={styles.preferencesContainer}>
+          <View style={styles.preferenceRow}>
+            <Text style={styles.preferenceText}>Pause Notifications</Text>
+            <Switch
+              value={notificationsPaused}
+              onValueChange={toggleNotifications}
+              trackColor={{ false: '#767577', true: '#81b0ff' }}
+              thumbColor={notificationsPaused ? '#f5dd4b' : '#f4f3f4'}
+            />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out" size={24} color="#F44336" />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out" size={24} color="#F44336" />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+
+      <DeviceInfoModal
+        visible={deviceModalVisible}
+        onClose={() => setDeviceModalVisible(false)}
+      />
+    </>
   );
 }
 
@@ -120,5 +145,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#F44336',
+  },
+  deviceSettingsItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+  },
+  deviceSettingsText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#444',
   },
 });

@@ -9,6 +9,10 @@ import { StatusBar } from 'react-native';
 import { useThemeStore } from './src/store/themeStore';
 
 import { notificationService } from './src/services/NotificationService';
+import GlobalOrderAlert from './src/components/GlobalOrderAlert';
+
+import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function App(): React.JSX.Element {
   const { theme } = useThemeStore();
@@ -27,16 +31,21 @@ export default function App(): React.JSX.Element {
 
   return (
     <QueryProvider>
-      <GestureHandlerRootView
-        style={{ flex: 1, backgroundColor: theme.colors.background }}
-      >
-        <StatusBar
-          barStyle={theme.isDark ? 'light-content' : 'dark-content'}
-          backgroundColor={theme.colors.background}
-          translucent={false}
-        />
-        <RootNavigator />
-      </GestureHandlerRootView>
+      <SafeAreaProvider>
+        <GestureHandlerRootView
+          style={{ flex: 1, backgroundColor: theme.colors.background }}
+        >
+          <NavigationContainer>
+            <StatusBar
+              barStyle={theme.isDark ? 'light-content' : 'dark-content'}
+              backgroundColor={theme.colors.background}
+              translucent={false}
+            />
+            <GlobalOrderAlert />
+            <RootNavigator />
+          </NavigationContainer>
+        </GestureHandlerRootView>
+      </SafeAreaProvider>
     </QueryProvider>
   );
 }

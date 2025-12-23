@@ -4,140 +4,91 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated,
   Dimensions,
+  Animated,
   Platform,
 } from 'react-native';
-import { useOrderStore } from '../store/orderStore';
-import Sound from 'react-native-sound';
+import { useNotificationStore } from '../store/notificationStore';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useThemeStore } from '../store/themeStore';
-
-const { width } = Dimensions.get('window');
-
-// Enable playback in silence mode
-Sound.setCategory('Playback');
 
 const GlobalOrderAlert = () => {
-  const { activeAlert, dismissAlert } = useOrderStore();
-  const { theme } = useThemeStore();
+  const { activeAlert, hideActiveAlert } = useNotificationStore();
+  const insets = useSafeAreaInsets();
+  const slideAnim = useRef(new Animated.Value(-150)).current;
   const navigation = useNavigation<any>();
-  const slideAnim = useRef(new Animated.Value(-100)).current; // Start off-screen top
-  const soundRef = useRef<Sound | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Cleanup function to stop sound
-  const stopSound = () => {
-    if (soundRef.current) {
-      soundRef.current.stop(() => {
-        soundRef.current?.release();
-      });
-      soundRef.current = null;
-    }
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  };
 
   useEffect(() => {
     if (activeAlert) {
-      // Stop any previous sound just in case
-      stopSound();
-
-      // Play Sound
-      // On Android res/raw, must not include extension
-      const soundName = Platform.OS === 'android' ? 'bell' : 'bell.mp3';
-
-      const bell = new Sound(soundName, Sound.MAIN_BUNDLE, error => {
-        if (error) {
-          console.log('failed to load the sound', error);
-          return;
-        }
-
-        // Loop the sound
-        bell.setNumberOfLoops(-1);
-
-        bell.play(success => {
-          if (!success) {
-            console.log('playback failed due to audio decoding errors');
-          }
-        });
-
-        soundRef.current = bell;
-      });
-
-      // Stop after 10 seconds automatically
-      timeoutRef.current = setTimeout(() => {
-        stopSound();
-      }, 10000);
-
-      // Animate In
+      // Slide In
       Animated.spring(slideAnim, {
-        toValue: Platform.OS === 'ios' ? 50 : 20, // Adjust for safe area/status bar
+        toValue: 0,
         useNativeDriver: true,
-        friction: 5,
+        speed: 12,
+        bounciness: 8,
       }).start();
-    } else {
-      // Stop sound immediately if alert is dismissed
-      stopSound();
 
-      // Animate Out
-      Animated.timing(slideAnim, {
-        toValue: -150,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      // Auto hide after 5 seconds
+      const timer = setTimeout(() => {
+        handleDismiss();
+      }, 5000);
+
+      return () => clearTimeout(timer);
     }
+  }, [activeAlert]);
 
-    // Cleanup on unmount
-    return () => {
-      stopSound();
-    };
-  }, [activeAlert, slideAnim]);
-
-  if (!activeAlert) return null;
+  const handleDismiss = () => {
+    Animated.timing(slideAnim, {
+      toValue: -150,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      hideActiveAlert();
+    });
+  };
 
   const handlePress = () => {
-    stopSound(); // Stop sound on interaction
-    dismissAlert();
-    navigation.navigate('Orders');
+    handleDismiss();
+    // Navigate to Orders/Tables screen
+    // TODO: Adjust route name based on your navigation structure
+    // navigation.navigate('Tables');
   };
+
+  if (!activeAlert) return null;
 
   return (
     <Animated.View
       style={[
         styles.container,
         {
+          top: insets.top + (Platform.OS === 'android' ? 10 : 0),
           transform: [{ translateY: slideAnim }],
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.accent,
         },
       ]}
     >
       <TouchableOpacity
         style={styles.content}
-        onPress={handlePress}
         activeOpacity={0.9}
+        onPress={handlePress}
       >
-        <View style={styles.left}>
-          <Text style={styles.icon}>🔔</Text>
+        <View style={styles.iconContainer}>
+          <Ionicons name="notifications" size={24} color="#FFF" />
         </View>
-        <View style={styles.center}>
-          <Text style={[styles.title, { color: theme.colors.textPrimary }]}>
-            New Order Received!
+        <View style={styles.textContainer}>
+          <Text style={styles.title} numberOfLines={1}>
+            {activeAlert.title}
           </Text>
-          <Text
-            style={[styles.subtitle, { color: theme.colors.textSecondary }]}
-          >
-            Table {activeAlert.tableNumber} • {activeAlert.userName}
+          <Text style={styles.body} numberOfLines={2}>
+            {activeAlert.body}
           </Text>
+          {activeAlert.tableName && (
+            <Text style={styles.meta}>{activeAlert.tableName} • Just now</Text>
+          )}
         </View>
-        <View style={styles.right}>
-          <Text style={[styles.action, { color: theme.colors.primary }]}>
-            VIEW
-          </Text>
-        </View>
+        <TouchableOpacity style={styles.closeButton} onPress={handleDismiss}>
+          <Ionicons name="close" size={20} color="#9E9E9E" />
+        </TouchableOpacity>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -146,46 +97,55 @@ const GlobalOrderAlert = () => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 0,
-    left: 20,
-    right: 20,
-    borderRadius: 12,
-    borderWidth: 1,
+    left: 16,
+    right: 16,
+    zIndex: 9999, // Ensure it's on top
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 6,
-    zIndex: 9999, // Ensure it's on top
+    elevation: 8,
   },
   content: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9800', // Warning/Alert color
   },
-  left: {
-    marginRight: 16,
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FF9800',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  icon: {
-    fontSize: 24,
-  },
-  center: {
+  textContainer: {
     flex: 1,
+    marginRight: 8,
   },
   title: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 4,
+    color: '#212121',
+    marginBottom: 2,
   },
-  subtitle: {
+  body: {
     fontSize: 14,
+    color: '#616161',
   },
-  right: {
-    marginLeft: 16,
+  meta: {
+    fontSize: 12,
+    color: '#9E9E9E',
+    marginTop: 4,
+    fontWeight: '500',
   },
-  action: {
-    fontWeight: 'bold',
-    fontSize: 14,
+  closeButton: {
+    padding: 8,
   },
 });
 

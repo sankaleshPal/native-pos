@@ -3,9 +3,5 @@ import { NavigationContainer } from '@react-navigation/native';
 import POSNavigator from './POSNavigator';
 
 export default function RootNavigator() {
-  return (
-    <NavigationContainer>
-      <POSNavigator />
-    </NavigationContainer>
-  );
+  return <POSNavigator />;
 }
