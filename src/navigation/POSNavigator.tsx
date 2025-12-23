@@ -7,6 +7,10 @@ import MenuScreen from '../screens/MenuScreen';
 import CartScreen from '../screens/CartScreen';
 import KOTScreen from '../screens/KOTScreen';
 import BillScreen from '../screens/BillScreen';
+import OrdersScreen from '../screens/OrdersScreen';
+import GlobalOrderAlert from '../components/GlobalOrderAlert';
+import { useDummyOrderGenerator } from '../hooks/useDummyOrderGenerator';
+import { View } from 'react-native';
 
 export type POSStackParamList = {
   POSLogin: undefined;
@@ -16,31 +20,38 @@ export type POSStackParamList = {
   Cart: { table: any };
   KOT: { table: any };
   Bill: { table: any };
+  Orders: undefined;
 };
 
 const Stack = createStackNavigator<POSStackParamList>();
 
 const POSNavigator = () => {
+  useDummyOrderGenerator();
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="POSLogin">
-        {({ navigation }) => (
-          <POSLoginScreen
-            onLoginSuccess={() => navigation.replace('Welcome')}
-          />
-        )}
-      </Stack.Screen>
-      <Stack.Screen name="Welcome">
-        {({ navigation }) => (
-          <WelcomeScreen onComplete={() => navigation.replace('Dashboard')} />
-        )}
-      </Stack.Screen>
-      <Stack.Screen name="Dashboard" component={DashboardDrawer} />
-      <Stack.Screen name="Menu" component={MenuScreen} />
-      <Stack.Screen name="Cart" component={CartScreen} />
-      <Stack.Screen name="KOT" component={KOTScreen} />
-      <Stack.Screen name="Bill" component={BillScreen} />
-    </Stack.Navigator>
+    <View style={{ flex: 1 }}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="POSLogin">
+          {({ navigation }) => (
+            <POSLoginScreen
+              onLoginSuccess={() => navigation.replace('Welcome')}
+            />
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Welcome">
+          {({ navigation }) => (
+            <WelcomeScreen onComplete={() => navigation.replace('Dashboard')} />
+          )}
+        </Stack.Screen>
+        <Stack.Screen name="Dashboard" component={DashboardDrawer} />
+        <Stack.Screen name="Menu" component={MenuScreen} />
+        <Stack.Screen name="Cart" component={CartScreen} />
+        <Stack.Screen name="KOT" component={KOTScreen} />
+        <Stack.Screen name="Bill" component={BillScreen} />
+        <Stack.Screen name="Orders" component={OrdersScreen} />
+      </Stack.Navigator>
+      <GlobalOrderAlert />
+    </View>
   );
 };
 

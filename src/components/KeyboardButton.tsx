@@ -91,8 +91,8 @@ const KeyboardButton = ({
       default:
         // Use primary color for gradient. Side is secondary/darker.
         return {
-          gradient: [theme.colors.primary, theme.colors.primary],
-          text: theme.colors.textInverse,
+          gradient: [theme.colors.accent, theme.colors.primary],
+          text: theme.colors.background,
           side: theme.colors.secondary,
         };
     }
@@ -131,9 +131,10 @@ const KeyboardButton = ({
       >
         <LinearGradient
           colors={colors.gradient}
+          locations={[0.5, 1.0]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
           style={[styles.buttonFace, buttonFaceStyle]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
         >
           {loading ? (
             <ActivityIndicator color={colors.text} />
@@ -159,36 +160,37 @@ const getStyles = () =>
       marginBottom: 12, // Margin to prevent layout jump if we were doing margin animation, but here strictly for spacing
       justifyContent: 'center',
       alignItems: 'center',
+      transform: [
+        { rotateX: '30deg' },
+        { rotateY: '0deg' },
+        { rotateZ: '0deg' },
+      ],
     },
     buttonFace: {
       width: '100%',
       height: '100%',
-      borderRadius: 6,
-      borderRightWidth: 1,
-      borderLeftWidth: 1,
-      borderBottomWidth: 10, // The chunky side
+      borderRadius: 0,
+      borderBottomWidth: 12,
       justifyContent: 'center',
       alignItems: 'center',
-
-      // Heavy Shadow / Elevation
       elevation: 30,
       shadowColor: 'rgba(0, 0, 0, 0.4)',
-      shadowOffset: { width: 1, height: 13 },
-      shadowOpacity: 0.8,
+      shadowOffset: { width: 5, height: 5 },
+      shadowOpacity: 0.1,
       shadowRadius: 15,
     },
     content: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      // Adjust padding to center visually given the bottom border
-      paddingBottom: 6,
+      paddingBottom: 0,
     },
     iconContainer: {
-      marginRight: 8,
+      marginRight: 6,
+      marginLeft: -8,
     },
     label: {
-      fontSize: 18,
+      fontSize: 20,
       fontWeight: '700',
       fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
       letterSpacing: 0.5,

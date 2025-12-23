@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Image,
 } from 'react-native';
 import { usePOSStore } from '../store/posStore';
 import { useThemeStore } from '../store/themeStore';
@@ -57,11 +58,13 @@ const POSLoginScreen: React.FC<POSLoginScreenProps> = ({ onLoginSuccess }) => {
 
       <View style={styles.content}>
         <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <Ionicons
-              name="restaurant"
-              size={48}
-              color={theme.colors.primary}
+          <View
+            style={[styles.iconContainer, { backgroundColor: 'transparent' }]}
+          >
+            <Image
+              source={require('../assets/images/logo.png')}
+              style={{ width: 80, height: 80 }}
+              resizeMode="contain"
             />
           </View>
           <Text style={styles.title}>Welcome Back</Text>

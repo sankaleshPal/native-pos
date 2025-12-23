@@ -8,6 +8,8 @@ import { seedLargeMenuData } from './src/db/seedLargeMenu';
 import { StatusBar } from 'react-native';
 import { useThemeStore } from './src/store/themeStore';
 
+import { notificationService } from './src/services/NotificationService';
+
 export default function App(): React.JSX.Element {
   const { theme } = useThemeStore();
 
@@ -18,6 +20,9 @@ export default function App(): React.JSX.Element {
       await seedLargeMenuData();
     };
     initDB();
+
+    // Initialize Notifications
+    notificationService.initialize();
   }, []);
 
   return (

@@ -9,6 +9,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../store/authStore';
@@ -67,7 +68,11 @@ export default function LoginScreen() {
       <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
-          <Ionicons name="lock-closed" size={64} />
+          <Image
+            source={require('../assets/images/logo.png')}
+            style={{ width: 100, height: 100, marginBottom: 16 }}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Login to continue</Text>
         </View>

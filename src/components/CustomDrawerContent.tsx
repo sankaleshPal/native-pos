@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Switch,
+} from 'react-native';
 import {
   DrawerContentScrollView,
   DrawerItemList,
@@ -8,11 +15,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../store/authStore';
+import { useSettingsStore } from '../store/settingsStore';
 
 export default function CustomDrawerContent(
   props: DrawerContentComponentProps,
 ) {
   const logout = useAuthStore(state => state.logout);
+  const { notificationsPaused, toggleNotifications } = useSettingsStore();
+
   // @ts-ignore - navigation is available in props
   const navigation = props.navigation;
 
@@ -49,6 +59,18 @@ export default function CustomDrawerContent(
         <DrawerItemList {...props} />
       </DrawerContentScrollView>
 
+      <View style={styles.preferencesContainer}>
+        <View style={styles.preferenceRow}>
+          <Text style={styles.preferenceText}>Pause Notifications</Text>
+          <Switch
+            value={notificationsPaused}
+            onValueChange={toggleNotifications}
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={notificationsPaused ? '#f5dd4b' : '#f4f3f4'}
+          />
+        </View>
+      </View>
+
       <View style={styles.footer}>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out" size={24} color="#F44336" />
@@ -65,6 +87,21 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 0,
+  },
+  preferencesContainer: {
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    padding: 16,
+  },
+  preferenceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  preferenceText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
   },
   footer: {
     borderTopWidth: 1,
