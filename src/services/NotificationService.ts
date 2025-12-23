@@ -61,6 +61,7 @@ class NotificationService {
         body: remoteMessage.notification?.body || 'You have a new order!',
         android: {
           channelId: 'default',
+          importance: AndroidImportance.HIGH,
           pressAction: {
             id: 'default',
           },
@@ -82,6 +83,7 @@ class NotificationService {
       body: body,
       android: {
         channelId: 'default',
+        importance: AndroidImportance.HIGH,
         pressAction: {
           id: 'default',
         },

@@ -16,6 +16,8 @@ import { useThemeStore } from '../store/themeStore';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import KeyboardButton from '../components/KeyboardButton';
 
+import { biometricService } from '../services/BiometricService';
+
 interface POSLoginScreenProps {
   onLoginSuccess: () => void;
 }
@@ -24,8 +26,34 @@ const POSLoginScreen: React.FC<POSLoginScreenProps> = ({ onLoginSuccess }) => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [biometryAvailable, setBiometryAvailable] = useState(false);
   const login = usePOSStore(state => state.login);
   const theme = useThemeStore(s => s.theme);
+
+  React.useEffect(() => {
+    biometricService.isSensorAvailable().then(setBiometryAvailable);
+  }, []);
+
+  const handleBiometricLogin = async () => {
+    const success = await biometricService.simplePrompt(
+      'Login with Biometrics',
+    );
+    if (success) {
+      setLoading(true);
+      // Use dev credentials for quick access
+      // Sankalesh: 8668229890 / 6344
+      const loginSuccess = await login('8668229890', '6344');
+      setLoading(false);
+      if (loginSuccess) {
+        onLoginSuccess();
+      } else {
+        Alert.alert(
+          'Error',
+          'Default credentials failed. Please login manually.',
+        );
+      }
+    }
+  };
 
   const handleLogin = async () => {
     if (!phone || !password) {
@@ -130,6 +158,21 @@ const POSLoginScreen: React.FC<POSLoginScreenProps> = ({ onLoginSuccess }) => {
               ) : undefined
             }
           />
+
+          {biometryAvailable && (
+            <TouchableOpacity
+              style={styles.biometricButton}
+              onPress={handleBiometricLogin}
+              disabled={loading}
+            >
+              <Ionicons
+                name="finger-print"
+                size={32}
+                color={theme.colors.primary}
+              />
+              <Text style={styles.biometricText}>Login with Fingerprint</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.footer}>
@@ -262,6 +305,19 @@ const getStyles = (theme: any) =>
       color: theme.colors.textSecondary,
       fontSize: 14,
       fontWeight: '500',
+    },
+    biometricButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 24,
+      padding: 12,
+    },
+    biometricText: {
+      marginLeft: 8,
+      fontSize: 16,
+      color: theme.colors.primary,
+      fontWeight: '600',
     },
   });
 

@@ -35,6 +35,8 @@
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Enabling Face ID allows you quick and secure access to your account.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app needs access to the local network to scan and display available WiFi networks.</string>
 	<key>UILaunchStoryboardName</key>

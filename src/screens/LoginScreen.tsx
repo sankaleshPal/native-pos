@@ -15,6 +15,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useAuthStore } from '../store/authStore';
 import KeyboardButton from '../components/KeyboardButton';
 import { useThemeStore } from '../store/themeStore';
+import { biometricService } from '../services/BiometricService';
 
 export default function LoginScreen() {
   const { theme } = useThemeStore();
@@ -23,6 +24,29 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [biometryAvailable, setBiometryAvailable] = useState(false);
+
+  React.useEffect(() => {
+    biometricService.isSensorAvailable().then(setBiometryAvailable);
+  }, []);
+
+  const handleBiometricLogin = async () => {
+    const success = await biometricService.simplePrompt(
+      'Login with Biometrics',
+    );
+    if (success) {
+      setLoading(true);
+      // Use hardcoded demo credentials for biometric login
+      const loginSuccess = await login('8668229890', '2701');
+      setLoading(false);
+      if (!loginSuccess) {
+        Alert.alert(
+          'Error',
+          'Default credentials failed. Please login manually.',
+        );
+      }
+    }
+  };
 
   const login = useAuthStore(state => state.login);
 
@@ -146,6 +170,22 @@ export default function LoginScreen() {
             style={styles.loginButtonContainer}
           />
 
+          {/* Biometric Login */}
+          {biometryAvailable && (
+            <TouchableOpacity
+              style={styles.biometricButton}
+              onPress={handleBiometricLogin}
+              disabled={loading}
+            >
+              <Ionicons
+                name="finger-print"
+                size={32}
+                color={theme.colors.primary}
+              />
+              <Text style={styles.biometricText}>Login with Fingerprint</Text>
+            </TouchableOpacity>
+          )}
+
           {/* Hint */}
           <View style={styles.hintContainer}>
             <Ionicons
@@ -243,5 +283,18 @@ const styles = StyleSheet.create({
   },
   loginButtonContainer: {
     marginTop: 8,
+  },
+  biometricButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
+    padding: 12,
+  },
+  biometricText: {
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#1976D2',
+    fontWeight: '600',
   },
 });
