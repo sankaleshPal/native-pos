@@ -1,4 +1,4 @@
-package com.test
+package com.hipalz.demopos
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

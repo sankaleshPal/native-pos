@@ -78,13 +78,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.test"
+    namespace "com.hipalz.demopos"
     defaultConfig {
-        applicationId "com.test"
+        applicationId "com.hipalz.demopos"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "1.0.0"
+        versionCode 4
+        versionName "2.1.0"
     }
     signingConfigs {
         debug {
@@ -121,7 +121,8 @@ apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
-
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
+    implementation("com.google.firebase:firebase-analytics")
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
     } else {
